@@ -1,0 +1,445 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  password     String
+  role         String   @default("Karyawan")
+  isActive     Boolean  @default(true)
+  noHp         String?
+  alamat       String?
+  tanggalMasuk DateTime?
+  payrollType  String   @default("HarianTetap")
+  dailyRate    Float    @default(0)
+  monthlySalary Float   @default(0)
+  pieceRate    Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  approvedPOs          ProductionOrder[]
+  scanLogs             ScanLog[]
+  qcRecords            QCRecord[]
+  cuttingReports       CuttingReport[]
+  sentSewingReports    SewingReport[] @relation("SentBy")
+  receivedSewingReports SewingReport[] @relation("ReceivedBy")
+  buttonholeRecords    ButtonholeRecord[]
+  packingBatches       PackingBatch[]
+  customerReturns      CustomerReturn[]
+  attendances          Attendance[]
+  payrolls             Payroll[]
+  sales                Sale[]
+  payments             Payment[]
+  chatMessages         ChatMessage[]
+}
+
+model Bahan {
+  id          String   @id @default(cuid())
+  kode        String   @unique
+  nama        String
+  satuan      String
+  warna       String
+  stok        Float    @default(0)
+  hargaBeli   Float    @default(0)
+  stokMinimum Float    @default(0)
+  kategori    String   @default("Bahan Baku")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  poBahanEstimasis POBahanEstimasi[]
+  cuttingDetails   CuttingReportDetail[]
+}
+
+model Produk {
+  id        String   @id @default(cuid())
+  kode      String   @unique
+  nama      String
+  deskripsi String?
+  fotoUrl   String?
+  namaFoto  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  variasi       ProdukVariasi[]
+  garmentPieces GarmentPiece[]
+}
+
+model ProdukVariasi {
+  id          String   @id @default(cuid())
+  produkId    String
+  produk      Produk   @relation(fields: [produkId], references: [id], onDelete: Cascade)
+  size        String
+  warna       String
+  sku         String   @unique
+  fotoPath    String?
+  fotoUrl     String?
+  namaFoto    String?
+
+  @@unique([produkId, size, warna])
+  @@index([sku])
+
+  poItems POItem[]
+}
+
+model SewingPartner {
+  id            String        @id @default(cuid())
+  nama          String        @unique
+  sewingReports SewingReport[]
+}
+
+model ProductionOrder {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  status       String   @default("Draft")
+  notes        String?
+  approvedById String?
+  approvedBy   User?    @relation(fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items          POItem[]
+  bahanEstimasi  POBahanEstimasi[]
+  garmentPieces  GarmentPiece[]
+  cuttingReports CuttingReport[]
+  sewingReports  SewingReport[]
+  packingBatches PackingBatch[]
+}
+
+model POItem {
+  id              String          @id @default(cuid())
+  poId            String
+  po              ProductionOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  produkVariasiId String
+  variasi         ProdukVariasi   @relation(fields: [produkVariasiId], references: [id])
+  targetQty       Int
+  estimasiBiaya   Float?
+  estimasiHargaMasuk Float?
+
+  @@unique([poId, produkVariasiId])
+  @@index([poId])
+}
+
+model POBahanEstimasi {
+  id              String          @id @default(cuid())
+  poId            String
+  po              ProductionOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  bahanId         String
+  bahan           Bahan           @relation(fields: [bahanId], references: [id])
+  estimatedAmount Float
+
+  @@unique([poId, bahanId])
+  @@index([poId])
+}
+
+model GarmentPiece {
+  id               String   @id @default(cuid())
+  barcode          String   @unique
+  poId             String
+  po               ProductionOrder @relation(fields: [poId], references: [id])
+  produkId         String
+  produk           Produk   @relation(fields: [produkId], references: [id])
+  size             String
+  color            String
+  sewerName        String?
+  cuttingDate      DateTime?
+  currentStage     String   @default("Cut")
+  cuttingReportId  String?
+  cuttingReport    CuttingReport? @relation(fields: [cuttingReportId], references: [id])
+
+  scanLogs    ScanLog[]
+  qcRecords   QCRecord[]
+  sewingDetails    SewingReportDetail[]
+  buttonholeRecords ButtonholeRecord[]
+  packingItems      PackingBatchItem[]
+  customerReturns   CustomerReturn[]
+  saleItems         SaleItem[]
+
+  @@index([barcode])
+  @@index([poId])
+  @@index([sewerName])
+}
+
+model ScanLog {
+  id          String   @id @default(cuid())
+  barcodeUnitId String
+  barcodeUnit GarmentPiece @relation(fields: [barcodeUnitId], references: [id])
+  stage       String
+  scannedById String
+  scannedBy   User     @relation(fields: [scannedById], references: [id])
+  scannedAt   DateTime @default(now())
+  notes       String?
+
+  @@index([barcodeUnitId])
+  @@index([scannedAt])
+}
+
+model QCRecord {
+  id              String   @id @default(cuid())
+  barcodeUnitId   String
+  barcodeUnit     GarmentPiece @relation(fields: [barcodeUnitId], references: [id])
+  qcStage         String
+  result          String
+  defectPhotoPath String?
+  qcById          String
+  qcBy            User     @relation(fields: [qcById], references: [id])
+  qcAt            DateTime @default(now())
+  notes           String?
+
+  @@index([barcodeUnitId])
+  @@index([qcById])
+}
+
+model CuttingReport {
+  id                String   @id @default(cuid())
+  poId              String
+  po                ProductionOrder @relation(fields: [poId], references: [id])
+  reportDate        DateTime @default(now())
+  panelLength       Float?
+  panelCount        Int?
+  totalMaterialUsed Float?
+  totalResultQty    Int?
+  photoPath         String?
+  cutById           String
+  cutBy             User     @relation(fields: [cutById], references: [id])
+  createdAt         DateTime @default(now())
+
+  details          CuttingReportDetail[]
+  garmentPieces    GarmentPiece[]
+
+  @@index([poId])
+}
+
+model CuttingReportDetail {
+  id                String        @id @default(cuid())
+  cuttingReportId   String
+  cuttingReport     CuttingReport @relation(fields: [cuttingReportId], references: [id], onDelete: Cascade)
+  bahanId           String
+  bahan             Bahan         @relation(fields: [bahanId], references: [id])
+  size              String
+  warna             String
+  unitUsedMode      String
+  amountUsed        Float
+  cuttingCount      Int
+  perPieceMultiplier Int
+  resultQty         Int
+
+  @@index([cuttingReportId])
+}
+
+model SewingReport {
+  id            String   @id @default(cuid())
+  poId          String?
+  po            ProductionOrder? @relation(fields: [poId], references: [id])
+  partnerId     String
+  partner       SewingPartner @relation(fields: [partnerId], references: [id])
+  sentById      String
+  sentBy        User     @relation("SentBy", fields: [sentById], references: [id])
+  sentAt        DateTime @default(now())
+  receivedById  String?
+  receivedBy    User?    @relation("ReceivedBy", fields: [receivedById], references: [id])
+  receivedAt    DateTime?
+  status        String   @default("Sent")
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  details SewingReportDetail[]
+
+  @@index([partnerId])
+  @@index([poId])
+}
+
+model SewingReportDetail {
+  id              String       @id @default(cuid())
+  sewingReportId  String
+  sewingReport    SewingReport @relation(fields: [sewingReportId], references: [id], onDelete: Cascade)
+  barcodeUnitId   String
+  barcodeUnit     GarmentPiece @relation(fields: [barcodeUnitId], references: [id])
+  status          String       @default("Sent")
+  receivedAt      DateTime?
+
+  @@unique([sewingReportId, barcodeUnitId])
+  @@index([barcodeUnitId])
+}
+
+model ButtonholeRecord {
+  id            String   @id @default(cuid())
+  barcodeUnitId String
+  barcodeUnit   GarmentPiece @relation(fields: [barcodeUnitId], references: [id])
+  doneById      String
+  doneBy        User     @relation(fields: [doneById], references: [id])
+  doneAt        DateTime @default(now())
+  notes         String?
+
+  @@index([barcodeUnitId])
+}
+
+model PackingBatch {
+  id            String   @id @default(cuid())
+  batchNumber   String   @unique
+  poId          String?
+  po            ProductionOrder? @relation(fields: [poId], references: [id])
+  packedById    String
+  packedBy      User     @relation(fields: [packedById], references: [id])
+  packedAt      DateTime @default(now())
+  totalPieces   Int      @default(0)
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  items PackingBatchItem[]
+
+  @@index([batchNumber])
+  @@index([poId])
+}
+
+model PackingBatchItem {
+  id             String       @id @default(cuid())
+  packingBatchId String
+  packingBatch   PackingBatch @relation(fields: [packingBatchId], references: [id], onDelete: Cascade)
+  barcodeUnitId  String
+  barcodeUnit    GarmentPiece @relation(fields: [barcodeUnitId], references: [id])
+
+  @@unique([packingBatchId, barcodeUnitId])
+  @@index([barcodeUnitId])
+}
+
+model CustomerReturn {
+  id            String   @id @default(cuid())
+  barcodeUnitId String
+  barcodeUnit   GarmentPiece @relation(fields: [barcodeUnitId], references: [id])
+  returnDate    DateTime @default(now())
+  reason        String
+  condition     String
+  returnedById  String
+  returnedBy    User     @relation(fields: [returnedById], references: [id])
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([barcodeUnitId])
+}
+
+model EcommerceSale {
+  id            String   @id @default(cuid())
+  platform      String
+  orderId       String
+  orderDate     DateTime
+  customerName  String?
+  totalAmount   Float
+  shippingCost  Float    @default(0)
+  platformFee   Float    @default(0)
+  netAmount     Float    @default(0)
+  status        String   @default("Processing")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  payments Payment[]
+
+  @@unique([platform, orderId])
+  @@index([platform])
+  @@index([orderDate])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tanggal   DateTime
+  clockIn   DateTime?
+  clockOut  DateTime?
+  isPresent Boolean  @default(false)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, tanggal])
+  @@index([userId])
+  @@index([tanggal])
+}
+
+model Payroll {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  periode     String
+  totalDays   Int      @default(0)
+  totalPieces Int      @default(0)
+  basePay     Float    @default(0)
+  bonus       Float    @default(0)
+  deductions  Float    @default(0)
+  netPay      Float    @default(0)
+  status      String   @default("Draft")
+  paidAt      DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, periode])
+  @@index([userId])
+  @@index([periode])
+}
+
+model Sale {
+  id           String   @id @default(cuid())
+  saleDate     DateTime @default(now())
+  customerName String?
+  totalAmount  Float    @default(0)
+  soldById     String
+  soldBy       User     @relation(fields: [soldById], references: [id])
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  items    SaleItem[]
+  payments Payment[]
+
+  @@index([saleDate])
+}
+
+model SaleItem {
+  id            String     @id @default(cuid())
+  saleId        String
+  sale          Sale       @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  barcodeUnitId String
+  barcodeUnit   GarmentPiece @relation(fields: [barcodeUnitId], references: [id])
+  price         Float      @default(0)
+
+  @@unique([saleId, barcodeUnitId])
+  @@index([barcodeUnitId])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  ecommerceSaleId String?
+  ecommerceSale   EcommerceSale? @relation(fields: [ecommerceSaleId], references: [id])
+  saleId          String?
+  sale            Sale?    @relation(fields: [saleId], references: [id])
+  amount          Float
+  paymentMethod   String
+  paymentDate     DateTime
+  status          String   @default("Pending")
+  referenceNumber String?
+  notes           String?
+  recordedById    String
+  recordedBy      User     @relation(fields: [recordedById], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@index([ecommerceSaleId])
+  @@index([saleId])
+  @@index([paymentDate])
+  @@index([status])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
