@@ -1,6 +1,6 @@
 "use client"
 
-import { signIn } from "next-auth/react"
+import { signIn, getCsrfToken } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
@@ -27,18 +27,23 @@ export default function LoginPage() {
     setError("")
 
     const form = new FormData(e.currentTarget)
-    const result = await signIn("credentials", {
-      email: form.get("email") as string,
-      password: form.get("password") as string,
-      redirect: false,
+    const res = await fetch("/api/auth/callback/credentials", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        csrfToken: await getCsrfToken(),
+        email: form.get("email") as string,
+        password: form.get("password") as string,
+        callbackUrl: "/",
+        json: "true",
+      }),
     })
 
-    if (result?.error) {
+    if (res.ok) {
+      window.location.href = "/"
+    } else {
       setError("Email atau password salah")
       setLoading(false)
-    } else {
-      router.push("/")
-      router.refresh()
     }
   }
 
@@ -180,6 +185,7 @@ export default function LoginPage() {
                         {loading ? "Memuat..." : "Masuk"}
                       </Button>
                     </form>
+                    <form method="post" action="/api/auth/signout" className="hidden" />
                     <p className="text-xs text-zinc-600 text-center mt-4">
                       Belum punya akun?{" "}
                       <button onClick={() => setTab("register")} className="text-amber-500 hover:underline">Daftar</button>
