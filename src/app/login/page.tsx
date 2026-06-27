@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [videoEnded, setVideoEnded] = useState(false)
   const [tab, setTab] = useState<"login" | "register">("login")
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -80,8 +79,7 @@ export default function LoginPage() {
   }
 
   function handleVideoEnd() {
-    setVideoEnded(true)
-    setTimeout(() => setShowForm(true), 600)
+    setShowForm(true)
   }
 
   function skipVideo() {
@@ -89,25 +87,24 @@ export default function LoginPage() {
       videoRef.current.pause()
       videoRef.current.currentTime = videoRef.current.duration
     }
-    setVideoEnded(true)
     setShowForm(true)
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black">
+    <div className="relative min-h-screen overflow-y-auto bg-black">
       <AnimatePresence>
-        {!videoEnded && (
+        {!showForm && (
           <motion.div
             key="video"
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="absolute inset-0 z-10"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center"
           >
             <video
               ref={videoRef}
               src="/welcome.mp4"
-              className="w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
               autoPlay
               muted
               playsInline
@@ -115,14 +112,13 @@ export default function LoginPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="relative z-10 text-center px-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, delay: 0.5 }}
-                className="text-center"
               >
-                <img src="/cvrl-logo.svg" alt="CVRL Fashion" className="h-16 mb-6" />
+                <img src="/cvrl-logo.svg" alt="CVRL Fashion" className="h-16 mx-auto mb-6" />
                 <p className="text-zinc-400 text-sm tracking-widest uppercase">Welcome to</p>
                 <h1 className="text-white text-5xl sm:text-7xl font-bold mt-2 tracking-tight">CVRL FASHION</h1>
                 <p className="text-zinc-500 text-sm mt-4 max-w-md mx-auto">
@@ -130,39 +126,21 @@ export default function LoginPage() {
                 </p>
               </motion.div>
             </div>
-            <motion.div
+            <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 2 }}
-              className="absolute bottom-8 right-8 z-20"
+              onClick={skipVideo}
+              className="absolute bottom-8 right-8 z-20 px-6 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all"
             >
-              <button
-                onClick={skipVideo}
-                className="px-6 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all"
-              >
-                Skip &rarr;
-              </button>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5 }}
-              className="absolute bottom-8 left-8 z-20"
-            >
-              <p className="text-zinc-500 text-xs tracking-wider">SCROLL DOWN TO LOGIN</p>
-            </motion.div>
+              Skip &rarr;
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <motion.div
-        initial={false}
-        animate={showForm ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className={`relative z-20 flex min-h-screen items-center justify-center p-4 ${showForm ? "pointer-events-auto" : "pointer-events-none"}`}
-      >
+      <div className={`min-h-screen flex items-center justify-center p-4 transition-opacity duration-500 ${showForm ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
         <div className="w-full max-w-sm">
-          {/* Tabs */}
           <div className="flex mb-4 bg-zinc-900/60 backdrop-blur-xl rounded-xl p-1 border border-zinc-800">
             <button
               onClick={() => setTab("login")}
@@ -249,7 +227,7 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </div>
     </div>
   )
 }
