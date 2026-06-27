@@ -31,7 +31,7 @@ export default function LoginPage() {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        csrfToken: await getCsrfToken(),
+        csrfToken: (await getCsrfToken()) || "",
         email: form.get("email") as string,
         password: form.get("password") as string,
         callbackUrl: "/",
