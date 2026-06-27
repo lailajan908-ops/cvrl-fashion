@@ -4,6 +4,17 @@ import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/db"
 
 export const authOptions: NextAuthOptions = {
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.VERCEL === "1" || process.env.NODE_ENV === "production",
+      },
+    },
+  },
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -55,4 +66,9 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
+}
+
+export function getBaseUrl() {
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
+  return process.env.NEXTAUTH_URL || "http://localhost:3000"
 }
