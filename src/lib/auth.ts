@@ -6,15 +6,33 @@ import { prisma } from "@/lib/db"
 export const authOptions: NextAuthOptions = {
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: `__Secure-next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: process.env.VERCEL === "1" || process.env.NODE_ENV === "production",
+        secure: true,
+      },
+    },
+    callbackUrl: {
+      name: `__Secure-next-auth.callback-url`,
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
+    csrfToken: {
+      name: `__Secure-next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
       },
     },
   },
+  useSecureCookies: true,
   providers: [
     CredentialsProvider({
       name: "credentials",
