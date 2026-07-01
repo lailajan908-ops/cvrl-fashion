@@ -11,8 +11,8 @@
   "startUrl": "/store",
   "appVersion": "1",
   "appVersionName": "1.0.0",
-  "iconUrl": "https://cvrl-fashion.vercel.app/icon-512.png",
-  "maskableIconUrl": "https://cvrl-fashion.vercel.app/icon-512-maskable.png",
+  "iconUrl": "https://cvrl-fashion.vercel.app/icon-app.png",
+  "maskableIconUrl": "https://cvrl-fashion.vercel.app/icon-app.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "cvrl-keystore.jks",
