@@ -3,13 +3,18 @@ import { prisma } from "@/lib/db"
 import bcrypt from "bcryptjs"
 import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await requireApiRole("Owner")
 
+    const { searchParams } = new URL(req.url)
+    const status = searchParams.get("status")
+
+    const where = status ? { status } : {}
+
     const users = await prisma.user.findMany({
-      orderBy: { name: "asc" },
-      include: { _count: { select: { attendances: true } } },
+      where,
+      orderBy: { createdAt: "desc" },
     })
 
     return Response.json(users)

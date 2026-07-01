@@ -10,7 +10,14 @@ export async function requireAuth() {
 
 export async function requireRole(...roles: string[]) {
   const session = await requireAuth()
-  const role = (session.user as any).role
-  if (!roles.includes(role)) redirect("/unauthorized")
+  const userRole = (session.user as any).role
+  const userRoles: string[] = (session.user as any).roles || []
+  
+  // Owner bisa akses semua
+  if (userRole === "Owner") return session
+  
+  // Cek apakah user punya salah satu role yang diperlukan
+  const hasRole = roles.includes(userRole) || roles.some(r => userRoles.includes(r))
+  if (!hasRole) redirect("/unauthorized")
   return session
 }

@@ -17,17 +17,27 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email/Nama", type: "text" },
         password: { label: "Password", type: "password" },
-        role: { label: "Role", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
         try {
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
+          // Cek apakah login dengan email atau nama
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { email: credentials.email },
+                { name: credentials.email }
+              ]
+            },
           })
+
+          // Cek status PENDING
+          if (user && user.status === "PENDING") {
+            throw new Error("Akun belum diaktifkan oleh Owner. Silakan tunggu persetujuan.")
+          }
 
           if (!user || !user.isActive) return null
 
@@ -39,8 +49,13 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             role: user.role,
+            roles: user.roles,
           }
-        } catch {
+        } catch (err) {
+          // Return null untuk PENDING, tapi bisa throw error khusus
+          if (err instanceof Error && err.message.includes("belum diaktifkan")) {
+            return null // NextAuth akan lempar error "CredentialsSignin"
+          }
           return null
         }
       },

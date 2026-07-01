@@ -32,6 +32,7 @@ const navItems = [
   { href: "/packing", label: "Packing", icon: Package, roles: ["Owner", "AdminGudang", "ManagerProduksi"] },
   { label: "KARYAWAN", header: true, roles: ["Owner"] },
   { href: "/karyawan", label: "Karyawan", icon: User, roles: ["Owner"] },
+  { href: "/approval", label: "Persetujuan", icon: ShieldCheck, roles: ["Owner"] },
   { href: "/master/users", label: "User Management", icon: ShieldCheck, roles: ["Owner"] },
   { label: "KEUANGAN", header: true, roles: ["Owner", "AdminPenjualan"] },
   { href: "/pos", label: "POS / Penjualan", icon: ShoppingCart, roles: ["Owner", "AdminPenjualan"] },

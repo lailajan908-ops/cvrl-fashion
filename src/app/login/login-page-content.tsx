@@ -18,7 +18,7 @@ export function LoginPageContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loginLoading, setLoginLoading] = useState(false)
-  const [reg, setReg] = useState({ email: "", name: "", password: "", confirm: "" })
+  const [reg, setReg] = useState({ name: "", password: "", confirm: "" })
   const [regLoading, setRegLoading] = useState(false)
 
   useEffect(() => {
@@ -50,12 +50,12 @@ export function LoginPageContent() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    if (!reg.email || !reg.name || !reg.password) {
-      toast.error("Semua field wajib diisi")
+    if (!reg.name || !reg.password) {
+      toast.error("Nama dan password wajib diisi")
       return
     }
-    if (reg.password.length < 6) {
-      toast.error("Password minimal 6 karakter")
+    if (reg.password.length < 4) {
+      toast.error("Password minimal 4 karakter")
       return
     }
     if (reg.password !== reg.confirm) {
@@ -65,18 +65,19 @@ export function LoginPageContent() {
 
     setRegLoading(true)
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: reg.email, name: reg.name, password: reg.password }),
+        body: JSON.stringify({ name: reg.name, password: reg.password }),
       })
       if (!res.ok) {
         const err = await res.json()
         throw new Error(err.error || "Gagal mendaftar")
       }
-      toast.success("Pendaftaran berhasil! Silakan masuk.")
+      const data = await res.json()
+      toast.success(data.message || "Pendaftaran berhasil! Menunggu persetujuan Owner.")
       setTab("login")
-      setReg({ email: "", name: "", password: "", confirm: "" })
+      setReg({ name: "", password: "", confirm: "" })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal mendaftar")
     } finally {
@@ -258,21 +259,6 @@ export function LoginPageContent() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Email</Label>
-                          <div className="relative">
-                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                            <Input
-                              value={reg.email}
-                              onChange={(e) => setReg({ ...reg, email: e.target.value })}
-                              type="email"
-                              placeholder="email@example.com"
-                              required
-                              className="h-11 pl-10 bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-600 rounded-xl focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
                           <Label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Password</Label>
                           <div className="relative">
                             <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
@@ -280,7 +266,7 @@ export function LoginPageContent() {
                               value={reg.password}
                               onChange={(e) => setReg({ ...reg, password: e.target.value })}
                               type="password"
-                              placeholder="Minimal 6 karakter"
+                              placeholder="Minimal 4 karakter"
                               required
                               className="h-11 pl-10 bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-600 rounded-xl focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all"
                             />
