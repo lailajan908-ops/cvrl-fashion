@@ -1,10 +1,10 @@
-import { requireAuth } from "@/components/auth-guard"
+import { requireRole } from "@/components/auth-guard"
 import { QCPage } from "./qc-page"
 
 export const dynamic = "force-dynamic"
 
 export default async function QCMainPage() {
-  const session = await requireAuth()
+  const session = await requireRole("Owner", "AdminQC")
   const userId = (session.user as any).id
 
   return (

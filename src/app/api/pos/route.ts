@@ -1,13 +1,12 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "AdminPenjualan")
 
-  const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(req.url)
   const id = searchParams.get("id")
 
   if (id) {
@@ -37,60 +36,65 @@ export async function GET(req: NextRequest) {
   })
 
   return Response.json(sales)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const session = await requireApiRole("Owner", "AdminPenjualan")
 
-  const userId = (session.user as any).id
-  const { items, customerName, notes } = await req.json()
+    const userId = (session.user as any).id
+    const { items, customerName, notes } = await req.json()
 
-  if (!items || items.length === 0) {
-    return Response.json({ error: "Minimal 1 item" }, { status: 400 })
-  }
-
-  const result = await prisma.$transaction(async (tx) => {
-    let totalAmount = 0
-    const saleItems: { barcodeUnitId: string; price: number }[] = []
-
-    for (const item of items) {
-      const piece = await tx.garmentPiece.findUnique({ where: { barcode: item.barcode } })
-      if (!piece) throw new Error(`Barcode ${item.barcode} tidak ditemukan`)
-      if (piece.currentStage !== "Packed") {
-        throw new Error(`Barcode ${item.barcode} belum di-pack (stage: ${piece.currentStage})`)
-      }
-
-      saleItems.push({ barcodeUnitId: piece.id, price: item.price || 0 })
-      totalAmount += item.price || 0
+    if (!items || items.length === 0) {
+      return Response.json({ error: "Minimal 1 item" }, { status: 400 })
     }
 
-    const sale = await tx.sale.create({
-      data: {
-        customerName: customerName || null,
-        totalAmount,
-        soldById: userId,
-        notes,
-        items: { create: saleItems },
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      let totalAmount = 0
+      const saleItems: { barcodeUnitId: string; price: number }[] = []
+
+      for (const item of items) {
+        const piece = await tx.garmentPiece.findUnique({ where: { barcode: item.barcode } })
+        if (!piece) throw new Error(`Barcode ${item.barcode} tidak ditemukan`)
+        if (piece.currentStage !== "Packed") {
+          throw new Error(`Barcode ${item.barcode} belum di-pack (stage: ${piece.currentStage})`)
+        }
+
+        saleItems.push({ barcodeUnitId: piece.id, price: item.price || 0 })
+        totalAmount += item.price || 0
+      }
+
+      const sale = await tx.sale.create({
+        data: {
+          customerName: customerName || null,
+          totalAmount,
+          soldById: userId,
+          notes,
+          items: { create: saleItems },
+        },
+      })
+
+      for (const item of items) {
+        const piece = await tx.garmentPiece.findUnique({ where: { barcode: item.barcode } })
+        if (piece) {
+          await tx.garmentPiece.update({
+            where: { id: piece.id },
+            data: { currentStage: "Sold" },
+          })
+          await tx.scanLog.create({
+            data: { barcodeUnitId: piece.id, stage: "Sold", scannedById: userId },
+          })
+        }
+      }
+
+      return sale
     })
 
-    // Update pieces to Sold stage
-    for (const item of items) {
-      const piece = await tx.garmentPiece.findUnique({ where: { barcode: item.barcode } })
-      if (piece) {
-        await tx.garmentPiece.update({
-          where: { id: piece.id },
-          data: { currentStage: "Sold" },
-        })
-        await tx.scanLog.create({
-          data: { barcodeUnitId: piece.id, stage: "Sold", scannedById: userId },
-        })
-      }
-    }
-
-    return sale
-  })
-
-  return Response.json(result)
+    return Response.json(result)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }

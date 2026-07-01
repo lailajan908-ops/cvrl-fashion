@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         name,
         password: hashed,
         role: "Karyawan",
-        isActive: true,
+        isActive: false,
       },
     })
 

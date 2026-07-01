@@ -1,132 +1,193 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
+import { generateVariantSKU } from "@/lib/sku-generator"
+
+const produkInclude = {
+  variasi: { orderBy: [{ warna: "asc" }, { size: "asc" }] as any },
+  images: { orderBy: { order: "asc" } },
+  kategori: true,
+  labels: { include: { label: true } },
+} as const
+
+export async function GET(req: NextRequest) {
+  try {
+    await requireApiRole("Owner", "ManagerProduksi", "AdminGudang", "AdminPenjualan")
+
+    const id = req.nextUrl.searchParams.get("id")
+    if (id) {
+      const produk = await prisma.produk.findUnique({
+        where: { id },
+        include: produkInclude
+      })
+      return Response.json(produk)
+    }
+
+    const produkList = await prisma.produk.findMany({
+      orderBy: { createdAt: "desc" },
+      include: produkInclude
+    })
+    return Response.json(produkList)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
+}
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
-
-  const body = await req.json()
-  const { kode, nama, variasi, deskripsi, fotoUrl, namaFoto } = body
-
-  if (!kode || !nama) {
-    return Response.json({ error: "Kode dan nama wajib diisi" }, { status: 400 })
-  }
-
-  if (!variasi || variasi.length === 0) {
-    return Response.json({ error: "Minimal 1 variasi" }, { status: 400 })
-  }
-
-  const existing = await prisma.produk.findUnique({ where: { kode } })
-  if (existing) {
-    return Response.json({ error: "Kode produk sudah ada" }, { status: 400 })
-  }
-
-  // Check for duplicate size+warna within request
-  const seen = new Set<string>()
-  for (const v of variasi) {
-    const key = `${v.size}-${v.warna}`
-    if (seen.has(key)) {
-      return Response.json({ error: `Duplikat variasi: ${v.size}/${v.warna}` }, { status: 400 })
-    }
-    seen.add(key)
-  }
-
   try {
+    await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
+
+    const body = await req.json()
+    const { kode, nama, deskripsi, kategoriId, weight, variasi, images, labels } = body
+
+    if (!kode || !nama) {
+      return Response.json({ error: "Kode dan nama wajib diisi" }, { status: 400 })
+    }
+
+    const existing = await prisma.produk.findUnique({ where: { kode } })
+    if (existing) {
+      return Response.json({ error: "Kode produk sudah ada" }, { status: 400 })
+    }
+
+    const warnaList = [...new Set<string>((variasi || []).map((v: any) => v.warna))]
+    for (const w of warnaList) {
+      const hasFoto = (images || []).some((img: any) => img.warna === w)
+      if (!hasFoto) {
+        return Response.json({ error: `Warna ${w} belum memiliki foto` }, { status: 400 })
+      }
+    }
+
     const produk = await prisma.produk.create({
       data: {
-        kode,
-        nama,
-        deskripsi,
-        fotoUrl,
-        namaFoto,
-        variasi: {
+        kode, nama,
+        deskripsi: deskripsi || null,
+        kategoriId: kategoriId || null,
+        weight: weight || 0,
+        variasi: variasi?.length ? {
           create: variasi.map((v: any) => ({
-            size: v.size,
-            warna: v.warna,
-            sku: v.sku || `${kode}-${v.size}-${v.warna}`.toUpperCase(),
-            fotoPath: v.fotoPath || null,
-            fotoUrl: v.fotoUrl || null,
-            namaFoto: v.namaFoto || null,
-          })),
-        },
+            size: v.size, warna: v.warna,
+            sku: v.sku || generateVariantSKU(kode, v.warna, v.size),
+            barcode: v.barcode || null,
+            price: v.price || 0,
+            hargaDiskon: v.hargaDiskon || null,
+            stock: v.stock || 0,
+            isActive: v.isActive ?? true,
+          }))
+        } : undefined,
+        images: images?.length ? {
+          create: images.map((img: any, i: number) => ({
+            url: img.url,
+            warna: img.warna || null,
+            isPrimary: img.isPrimary || i === 0,
+            order: i
+          }))
+        } : undefined,
+        labels: labels?.length ? {
+          create: labels.map((l: any) => ({
+            labelId: l.labelId,
+            warna: l.warna || null,
+            size: l.size || null,
+            sku: l.sku || null,
+          }))
+        } : undefined,
       },
-      include: { variasi: true },
+      include: produkInclude
     })
+
+    // Auto-assign "New Arrival" label
+    const newArrivalLabel = await prisma.promoLabel.findUnique({ where: { nama: "New Arrival" } })
+    if (newArrivalLabel) {
+      await prisma.produkLabel.create({
+        data: { produkId: produk.id, labelId: newArrivalLabel.id }
+      }).catch(() => {})
+    }
+
     return Response.json(produk)
-  } catch (e: any) {
-    const msg = e.code === "P2002"
-      ? `SKU sudah ada: ${e.meta?.target?.join?.(', ') || 'duplikat'}. Variasi size+warna harus unik per produk.`
-      : "Gagal menyimpan produk"
-    return Response.json({ error: msg }, { status: 400 })
+  } catch (err) {
+    return handleApiAuthError(err)
   }
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
-
-  const body = await req.json()
-  const { id, kode, nama, variasi, deskripsi, fotoUrl, namaFoto } = body
-
-  if (!id) return Response.json({ error: "ID required" }, { status: 400 })
-
-  const existing = await prisma.produk.findFirst({ where: { kode, NOT: { id } } })
-  if (existing) {
-    return Response.json({ error: "Kode produk sudah digunakan" }, { status: 400 })
-  }
-
-  const seen = new Set<string>()
-  for (const v of variasi) {
-    const key = `${v.size}-${v.warna}`
-    if (seen.has(key)) {
-      return Response.json({ error: `Duplikat variasi: ${v.size}/${v.warna}` }, { status: 400 })
-    }
-    seen.add(key)
-  }
-
   try {
+    await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
+
+    const body = await req.json()
+    const { id, kode, nama, deskripsi, kategoriId, weight, variasi, images, labels } = body
+
+    if (!id) return Response.json({ error: "ID required" }, { status: 400 })
+
+    const warnaList = [...new Set<string>((variasi || []).map((v: any) => v.warna))]
+    for (const w of warnaList) {
+      const hasFoto = (images || []).some((img: any) => img.warna === w)
+      if (!hasFoto) {
+        return Response.json({ error: `Warna ${w} belum memiliki foto` }, { status: 400 })
+      }
+    }
+
     await prisma.produkVariasi.deleteMany({ where: { produkId: id } })
+    await prisma.produkImage.deleteMany({ where: { produkId: id } })
 
     const produk = await prisma.produk.update({
       where: { id },
       data: {
-        kode,
-        nama,
-        deskripsi,
-        fotoUrl,
-        namaFoto,
-        variasi: {
+        kode, nama,
+        deskripsi: deskripsi || null,
+        kategoriId: kategoriId || null,
+        weight: weight || 0,
+        variasi: variasi?.length ? {
           create: variasi.map((v: any) => ({
-            size: v.size,
-            warna: v.warna,
-            sku: v.sku || `${kode}-${v.size}-${v.warna}`.toUpperCase(),
-            fotoPath: v.fotoPath || null,
-            fotoUrl: v.fotoUrl || null,
-            namaFoto: v.namaFoto || null,
-          })),
-        },
+            size: v.size, warna: v.warna,
+            sku: v.sku || generateVariantSKU(kode, v.warna, v.size),
+            barcode: v.barcode || null,
+            price: v.price || 0,
+            hargaDiskon: v.hargaDiskon || null,
+            stock: v.stock || 0,
+            isActive: v.isActive ?? true,
+          }))
+        } : undefined,
+        images: images?.length ? {
+          create: images.map((img: any, i: number) => ({
+            url: img.url,
+            warna: img.warna || null,
+            isPrimary: img.isPrimary || i === 0,
+            order: i
+          }))
+        } : undefined,
       },
-      include: { variasi: true },
+      include: produkInclude
     })
 
+    // Update labels if provided
+    if (labels) {
+      await prisma.produkLabel.deleteMany({ where: { produkId: id } })
+      if (labels.length > 0) {
+        await prisma.produkLabel.createMany({
+          data: labels.map((l: any) => ({
+            produkId: id,
+            labelId: l.labelId,
+            warna: l.warna || null,
+            size: l.size || null,
+            sku: l.sku || null,
+          }))
+        })
+      }
+    }
+
     return Response.json(produk)
-  } catch (e: any) {
-    const msg = e.code === "P2002"
-      ? `SKU sudah ada: ${e.meta?.target?.join?.(', ') || 'duplikat'}. Variasi size+warna harus unik per produk.`
-      : "Gagal menyimpan produk"
-    return Response.json({ error: msg }, { status: 400 })
+  } catch (err) {
+    return handleApiAuthError(err)
   }
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
-
-  const id = req.nextUrl.searchParams.get("id")
-  if (!id) return Response.json({ error: "ID required" }, { status: 400 })
-
-  await prisma.produk.delete({ where: { id } })
-  return Response.json({ success: true })
+  try {
+    await requireApiRole("Owner")
+    const id = req.nextUrl.searchParams.get("id")
+    if (!id) return Response.json({ error: "ID required" }, { status: 400 })
+    await prisma.produk.delete({ where: { id } })
+    return Response.json({ success: true })
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }

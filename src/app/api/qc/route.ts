@@ -1,15 +1,14 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 const STAGE_ORDER = ["Cut", "SentToSewing", "ReceivedFromSewing", "QC1", "ButtonHole", "QCFinal", "Packed", "Sold", "Returned"]
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "AdminQC")
 
-  const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(req.url)
   const barcode = searchParams.get("barcode")
   const sewerName = searchParams.get("sewer")
 
@@ -60,59 +59,64 @@ export async function GET(req: NextRequest) {
   })
 
   return Response.json(records)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const session = await requireApiRole("Owner", "AdminQC")
 
-  const userId = (session.user as any).id
-  const { barcode, qcStage, result, defectPhotoPath, notes } = await req.json()
+    const userId = (session.user as any).id
+    const { barcode, qcStage, result, defectPhotoPath, notes } = await req.json()
 
-  if (!barcode || !qcStage || !result) {
-    return Response.json({ error: "Barcode, stage QC, dan hasil wajib diisi" }, { status: 400 })
+    if (!barcode || !qcStage || !result) {
+      return Response.json({ error: "Barcode, stage QC, dan hasil wajib diisi" }, { status: 400 })
+    }
+
+    if (!["QC1", "QCFinal"].includes(qcStage)) {
+      return Response.json({ error: "Stage QC harus QC1 atau QCFinal" }, { status: 400 })
+    }
+
+    if (!["Pass", "Jahitan Rusak", "Bahan Rusak", "Ukuran Salah", "Kotor", "Lainnya"].includes(result)) {
+      return Response.json({ error: "Hasil tidak valid" }, { status: 400 })
+    }
+
+    const piece = await prisma.garmentPiece.findUnique({
+      where: { barcode },
+      include: { scanLogs: { orderBy: { scannedAt: "desc" }, take: 1 } },
+    })
+
+    if (!piece) {
+      return Response.json({ error: "Barcode tidak ditemukan" }, { status: 404 })
+    }
+
+    const qcRecord = await prisma.qCRecord.create({
+      data: {
+        barcodeUnitId: piece.id,
+        qcStage,
+        result,
+        defectPhotoPath,
+        qcById: userId,
+        notes,
+      },
+      include: {
+        qcBy: { select: { name: true } },
+        barcodeUnit: { select: { barcode: true, size: true, color: true, sewerName: true } },
+      },
+    })
+
+    return Response.json(qcRecord)
+  } catch (err) {
+    return handleApiAuthError(err)
   }
-
-  if (!["QC1", "QCFinal"].includes(qcStage)) {
-    return Response.json({ error: "Stage QC harus QC1 atau QCFinal" }, { status: 400 })
-  }
-
-  if (!["Pass", "Jahitan Rusak", "Bahan Rusak", "Ukuran Salah", "Kotor", "Lainnya"].includes(result)) {
-    return Response.json({ error: "Hasil tidak valid" }, { status: 400 })
-  }
-
-  const piece = await prisma.garmentPiece.findUnique({
-    where: { barcode },
-    include: { scanLogs: { orderBy: { scannedAt: "desc" }, take: 1 } },
-  })
-
-  if (!piece) {
-    return Response.json({ error: "Barcode tidak ditemukan" }, { status: 404 })
-  }
-
-  // Create QC record
-  const qcRecord = await prisma.qCRecord.create({
-    data: {
-      barcodeUnitId: piece.id,
-      qcStage,
-      result,
-      defectPhotoPath,
-      qcById: userId,
-      notes,
-    },
-    include: {
-      qcBy: { select: { name: true } },
-      barcodeUnit: { select: { barcode: true, size: true, color: true, sewerName: true } },
-    },
-  })
-
-  return Response.json(qcRecord)
 }
 
 // GET sewer defect summary
 export async function PUT(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "AdminQC")
 
   const body = await req.json()
 
@@ -145,4 +149,7 @@ export async function PUT(req: NextRequest) {
   }
 
   return Response.json({ error: "Invalid action" }, { status: 400 })
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }

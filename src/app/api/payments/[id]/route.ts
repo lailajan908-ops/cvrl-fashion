@@ -1,37 +1,43 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "AdminPenjualan")
 
-  const { status, referenceNumber, notes } = await req.json()
+    const { id } = await params
+    const { status, referenceNumber, notes } = await req.json()
 
-  const payment = await prisma.payment.update({
-    where: { id },
-    data: {
-      ...(status && { status }),
-      ...(referenceNumber !== undefined && { referenceNumber }),
-      ...(notes !== undefined && { notes }),
-    },
-    include: {
-      ecommerceSale: { select: { platform: true, orderId: true } },
-      sale: { select: { customerName: true, totalAmount: true } },
-      recordedBy: { select: { name: true } },
-    },
-  })
+    const payment = await prisma.payment.update({
+      where: { id },
+      data: {
+        ...(status && { status }),
+        ...(referenceNumber !== undefined && { referenceNumber }),
+        ...(notes !== undefined && { notes }),
+      },
+      include: {
+        ecommerceSale: { select: { platform: true, orderId: true } },
+        sale: { select: { customerName: true, totalAmount: true } },
+        recordedBy: { select: { name: true } },
+      },
+    })
 
-  return Response.json(payment)
+    return Response.json(payment)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "AdminPenjualan")
 
-  await prisma.payment.delete({ where: { id } })
-  return Response.json({ success: true })
+    const { id } = await params
+
+    await prisma.payment.delete({ where: { id } })
+    return Response.json({ success: true })
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }

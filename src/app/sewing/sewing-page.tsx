@@ -157,9 +157,9 @@ export function SewingPage({ partners }: { partners: { id: string; nama: string 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <CardTitle>Laporan Sewing</CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Dialog open={openSend} onOpenChange={(v) => { setOpenSend(v); if (!v) resetSendForm() }}>
               <DialogTrigger render={<Button><Plus className="mr-2 h-4 w-4" /> Kirim ke Penjahit</Button>} />
               <DialogContent className="max-w-lg">
@@ -227,6 +227,7 @@ export function SewingPage({ partners }: { partners: { id: string; nama: string 
           </div>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -270,6 +271,7 @@ export function SewingPage({ partners }: { partners: { id: string; nama: string 
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -96,15 +96,17 @@ export function ClockCard() {
   }
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900/80 backdrop-blur-sm overflow-hidden">
-      <CardContent className="p-4">
+    <div className="card-luxury overflow-hidden">
+      <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-medium text-white">Absensi Hari Ini</span>
+            <div className="p-1.5 rounded-lg bg-amber-500/10">
+              <Clock className="h-3.5 w-3.5 text-amber-400" />
+            </div>
+            <span className="text-sm font-medium text-zinc-200">Absensi Hari Ini</span>
           </div>
           {status?.clockIn && (
-            <span className={`text-xs px-2 py-0.5 rounded-full ${status?.clockOut ? "bg-zinc-800 text-zinc-400" : "bg-green-900/50 text-green-400"}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${status?.clockOut ? "bg-zinc-800 text-zinc-400" : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"}`}>
               {status?.clockOut ? "Selesai" : "Sedang kerja"}
             </span>
           )}
@@ -161,7 +163,7 @@ export function ClockCard() {
             <Button
               onClick={() => handleClock("clockIn")}
               disabled={clocking}
-              className="flex-1 bg-amber-600 hover:bg-amber-500 text-black font-semibold text-sm"
+              className="flex-1 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-semibold text-sm"
             >
               {clocking ? "Memproses..." : capturing ? "Ambil Foto" : "Clock In + Foto"}
             </Button>
@@ -180,7 +182,7 @@ export function ClockCard() {
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

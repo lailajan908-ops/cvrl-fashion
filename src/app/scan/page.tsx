@@ -1,10 +1,10 @@
-import { requireAuth } from "@/components/auth-guard"
+import { requireRole } from "@/components/auth-guard"
 import { ScanPage } from "./scan-page"
 
 export const dynamic = "force-dynamic"
 
 export default async function ScanBarcodePage() {
-  const session = await requireAuth()
+  const session = await requireRole("Owner", "ManagerProduksi", "AdminGudang", "AdminQC")
 
   return (
     <div className="p-6 space-y-6">

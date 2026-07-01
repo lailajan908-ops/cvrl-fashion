@@ -86,7 +86,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <CardTitle>Daftar Bahan</CardTitle>
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
             <DialogTrigger render={<Button><Plus className="mr-2 h-4 w-4" /> Tambah Bahan</Button>} />
@@ -130,7 +130,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
                   <Label>Warna</Label>
                   <Input value={form.warna} onChange={(e) => setForm({ ...form, warna: e.target.value })} placeholder="Warna" />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Stok</Label>
                     <Input type="number" step="0.01" value={form.stok} onChange={(e) => setForm({ ...form, stok: parseFloat(e.target.value) || 0 })} />
@@ -150,6 +150,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
           </Dialog>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -174,7 +175,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.kode}</TableCell>
                   <TableCell>{b.nama}</TableCell>
-                  <TableCell><span className="text-xs px-2 py-0.5 rounded bg-zinc-100">{b.kategori}</span></TableCell>
+                  <TableCell><span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">{b.kategori}</span></TableCell>
                   <TableCell>{b.warna}</TableCell>
                   <TableCell>{b.satuan}</TableCell>
                   <TableCell className={b.stok <= b.stokMinimum ? "text-red-500 font-bold" : ""}>{b.stok}</TableCell>
@@ -194,6 +195,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
               ))}
             </TableBody>
           </Table>
+        </div>
         </CardContent>
       </Card>
     </>

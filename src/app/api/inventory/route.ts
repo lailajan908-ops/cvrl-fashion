@@ -1,13 +1,12 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "AdminGudang", "AdminPenjualan")
 
-  const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(req.url)
   const type = searchParams.get("type") || "overview"
 
   if (type === "overview") {
@@ -51,4 +50,7 @@ export async function GET(req: NextRequest) {
   })
 
   return Response.json(finished)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }

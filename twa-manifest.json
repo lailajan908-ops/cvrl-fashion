@@ -1,0 +1,24 @@
+{
+  "packageId": "com.cvrlfashion.store",
+  "host": "cvrl-fashion.vercel.app",
+  "name": "CVRL Fashion Store",
+  "launcherName": "CVRL Store",
+  "display": "standalone",
+  "themeColor": "#F59E0B",
+  "navigationColor": "#FFFFFF",
+  "backgroundColor": "#FFFFFF",
+  "enableNotifications": false,
+  "startUrl": "/store",
+  "appVersion": "1",
+  "appVersionName": "1.0.0",
+  "iconUrl": "https://cvrl-fashion.vercel.app/icon-512.png",
+  "maskableIconUrl": "https://cvrl-fashion.vercel.app/icon-512-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "cvrl-keystore.jks",
+    "alias": "cvrl"
+  },
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli"
+}

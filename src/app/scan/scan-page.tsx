@@ -163,6 +163,7 @@ export function ScanPage({ userId }: { userId: string }) {
             {pieceInfo.scanLogs?.length > 0 && (
               <div>
                 <h4 className="font-semibold mb-2">Riwayat Scan</h4>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -181,6 +182,7 @@ export function ScanPage({ userId }: { userId: string }) {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             )}
           </CardContent>

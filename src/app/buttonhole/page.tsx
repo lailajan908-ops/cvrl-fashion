@@ -1,10 +1,10 @@
-import { requireAuth } from "@/components/auth-guard"
+import { requireRole } from "@/components/auth-guard"
 import { ButtonholePage } from "./buttonhole-page"
 
 export const dynamic = "force-dynamic"
 
 export default async function ButtonholeMainPage() {
-  const session = await requireAuth()
+  const session = await requireRole("Owner", "ManagerProduksi", "AdminQC")
   const userId = (session.user as any).id
 
   return (

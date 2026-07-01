@@ -226,6 +226,7 @@ export function QCPage({ userId }: { userId: string }) {
             <CardTitle>Riwayat QC Terbaru</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -255,11 +256,12 @@ export function QCPage({ userId }: { userId: string }) {
                     <TableCell className="text-xs">{new Date(r.qcAt).toLocaleString("id-ID")}</TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+                </TableBody>
+              </Table>
+            </div>
+            </CardContent>
+          </Card>
+        </div>
 
       {/* Right: Sewer Defect Dashboard */}
       <div className="space-y-6">

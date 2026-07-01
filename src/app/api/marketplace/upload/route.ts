@@ -1,16 +1,13 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import * as XLSX from "xlsx"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return Response.json({ error: "Unauthorized" }, { status: 401 })
-
-  const userId = (session.user as any).id
-
   try {
+    const session = await requireApiRole("Owner", "AdminPenjualan")
+
+    const userId = (session.user as any).id
     const formData = await req.formData()
     const file = formData.get("file") as File | null
     if (!file) return Response.json({ error: "File tidak ditemukan" }, { status: 400 })
@@ -83,6 +80,6 @@ export async function POST(req: NextRequest) {
       results,
     })
   } catch (err: any) {
-    return Response.json({ error: `Gagal memproses file: ${err.message}` }, { status: 500 })
+    return handleApiAuthError(err)
   }
 }

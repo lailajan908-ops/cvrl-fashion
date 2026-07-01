@@ -1,90 +1,59 @@
 import { NextRequest } from "next/server"
-import fs from "fs/promises"
-import path from "path"
-import { v4 as uuidv4 } from "uuid"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export async function POST(req: NextRequest) {
   try {
+    await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
     const formData = await req.formData()
     const foto = formData.get("foto") as File
     const produkId = formData.get("produkId") as string
-    const ukuran = formData.get("ukuran") as string
+    const size = formData.get("size") as string
     const warna = formData.get("warna") as string
-    
-    if (!foto || !produkId || !ukuran || !warna) {
+
+    if (!foto || !produkId || !size || !warna) {
       return Response.json({ error: "Data tidak lengkap" }, { status: 400 })
     }
-    
+
     if (!foto.type.includes("image/")) {
       return Response.json({ error: "File harus berupa gambar" }, { status: 400 })
     }
-    
+
     if (foto.size > 5 * 1024 * 1024) {
       return Response.json({ error: "File foto tidak boleh lebih dari 5MB" }, { status: 400 })
     }
-    
-    const filename = `${uuidv4()}.${foto.name.split(".").pop()}`
-    const uploadDir = path.join(process.cwd(), "public", "produk-foto")
-    await fs.mkdir(uploadDir, { recursive: true })
-    
-    const filePath = path.join(uploadDir, filename)
-    const bytes = await foto.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    await fs.writeFile(filePath, buffer)
-    
-    const fotoUrl = `/produk-foto/${filename}`
-    
-    return Response.json({ 
-      success: true, 
-      fotoUrl, 
-      filename: foto.name 
+
+    const buffer = Buffer.from(await foto.arrayBuffer())
+    const base64 = buffer.toString("base64")
+    const fotoUrl = `data:${foto.type || "image/jpeg"};base64,${base64}`
+
+    return Response.json({
+      success: true,
+      fotoUrl,
+      filename: foto.name
     })
   } catch (error) {
-    return Response.json({ error: "Gagal mengupload foto" }, { status: 500 })
+    return handleApiAuthError(error)
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    const url = new URL(req.url)
-    const filename = url.searchParams.get("filename")
-    
-    if (!filename) {
-      return Response.json({ error: "Nama file diperlukan" }, { status: 400 })
-    }
-    
-    const filePath = path.join(process.cwd(), "public", "produk-foto", filename)
-    await fs.access(filePath)
-    await fs.unlink(filePath)
-    
+    await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
+    const filename = req.nextUrl.searchParams.get("filename")
+    if (!filename) return Response.json({ error: "Nama file diperlukan" }, { status: 400 })
     return Response.json({ success: true })
   } catch (error) {
-    return Response.json({ error: "Gagal menghapus foto" }, { status: 500 })
+    return handleApiAuthError(error)
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const url = new URL(req.url)
-    const filename = url.searchParams.get("filename")
-    
-    if (!filename) {
-      return new Response("Not Found", { status: 404 })
-    }
-    
-    const filePath = path.join(process.cwd(), "public", "produk-foto", filename)
-    await fs.access(filePath)
-    
-    const file = await fs.readFile(filePath)
-    const ext = filename.split(".").pop()
-    
-    const headers: HeadersInit = {
-      "Cache-Control": "public, max-age=31536000, immutable",
-      "Content-Type": `image/${ext === "jpg" || ext === "jpeg" ? "jpeg" : ext === "png" ? "png" : "webp"}`
-    }
-    
-    return new Response(file, { headers })
-  } catch (error) {
+    await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
+    const filename = req.nextUrl.searchParams.get("filename")
+    if (!filename) return new Response("Not Found", { status: 404 })
     return new Response("Not Found", { status: 404 })
+  } catch (error) {
+    return handleApiAuthError(error)
   }
 }

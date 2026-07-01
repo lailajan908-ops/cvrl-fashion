@@ -1,39 +1,11 @@
-const CACHE = "cvrl-v1"
-const ASSETS = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png", "/cvrl-icon.svg"]
-
-self.addEventListener("install", (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
-  )
-})
-
+self.addEventListener("install", () => self.skipWaiting())
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.map((k) => { if (k !== CACHE) return caches.delete(k) }))).then(() => clients.claim())
+    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))).then(() => clients.claim())
   )
 })
-
 self.addEventListener("fetch", (e) => {
-  const { request } = e
-  const url = new URL(request.url)
-
-  // Cache static assets
-  if (ASSETS.includes(url.pathname)) {
-    e.respondWith(caches.match(request))
-    return
+  if (e.request.mode === "navigate") {
+    e.respondWith(fetch(e.request).catch(() => new Response("", { status: 503 })))
   }
-
-  // Network first, fallback to cache for navigations
-  e.respondWith(
-    fetch(request).then((res) => {
-      if (res.ok && url.origin === self.location.origin) {
-        const clone = res.clone()
-        caches.open(CACHE).then((c) => c.put(request, clone))
-      }
-      return res
-    }).catch(() => {
-      if (request.mode === "navigate") return caches.match("/")
-      return caches.match(request).then((cached) => cached || new Response("Offline", { status: 503 }))
-    })
-  )
 })

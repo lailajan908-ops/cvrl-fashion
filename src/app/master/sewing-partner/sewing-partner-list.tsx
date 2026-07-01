@@ -47,7 +47,7 @@ export function SewingPartnerList({ data }: { data: Partner[] }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <CardTitle>Daftar Sewing Partner</CardTitle>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
           <DialogTrigger render={<Button><Plus className="mr-2 h-4 w-4" /> Tambah Partner</Button>} />
@@ -66,6 +66,7 @@ export function SewingPartnerList({ data }: { data: Partner[] }) {
         </Dialog>
       </CardHeader>
       <CardContent>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -92,9 +93,10 @@ export function SewingPartnerList({ data }: { data: Partner[] }) {
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableBody>
+          </Table>
+        </div>
+        </CardContent>
+      </Card>
   )
 }

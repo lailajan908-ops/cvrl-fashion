@@ -112,11 +112,11 @@ export function POList({ data, produkList, bahanList }: { data: any[]; produkLis
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <CardTitle>Daftar PO Produksi</CardTitle>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
           <DialogTrigger render={<Button><Plus className="mr-2 h-4 w-4" /> Buat PO Baru</Button>} />
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Buat PO Produksi Baru</DialogTitle>
             </DialogHeader>
@@ -132,8 +132,8 @@ export function POList({ data, produkList, bahanList }: { data: any[]; produkLis
                 {poItems.map((item: any, i: number) => {
                   const selectedVariasi = produkList.flatMap((p: any) => p.variasi).find((v: any) => v.id === item.produkVariasiId)
                   return (
-                    <div key={i} className="flex gap-2 items-end border p-3 rounded-lg">
-                      <div className="flex-1">
+                    <div key={i} className="flex gap-2 items-end border p-3 rounded-lg flex-wrap">
+                      <div className="w-full sm:flex-1">
                         <Label className="text-xs">Produk</Label>
                         <select
                           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
@@ -145,17 +145,17 @@ export function POList({ data, produkList, bahanList }: { data: any[]; produkLis
                           )))}
                         </select>
                       </div>
-                      <div className="w-24">
+                      <div className="flex-1 min-w-[80px]">
                         <Label className="text-xs">Target Qty</Label>
                         <Input type="number" min="1" value={item.targetQty || ""}
                           onChange={(e) => updateItem(i, "targetQty", parseInt(e.target.value) || 0)} />
                       </div>
-                      <div className="w-28">
+                      <div className="flex-1 min-w-[100px]">
                         <Label className="text-xs">Estimasi Biaya</Label>
                         <Input type="number" step="1000" value={item.estimasiBiaya}
                           onChange={(e) => updateItem(i, "estimasiBiaya", e.target.value)} placeholder="Rp" />
                       </div>
-                      <div className="w-28">
+                      <div className="flex-1 min-w-[100px]">
                         <Label className="text-xs">Harga Masuk/pc</Label>
                         <Input type="number" step="100" value={item.estimasiHargaMasuk}
                           onChange={(e) => updateItem(i, "estimasiHargaMasuk", e.target.value)} placeholder="Rp" />
@@ -178,8 +178,8 @@ export function POList({ data, produkList, bahanList }: { data: any[]; produkLis
                 {poBahan.map((b: any, i: number) => {
                   const selectedBahan = bahanList.find((bh: any) => bh.id === b.bahanId)
                   return (
-                    <div key={i} className="flex gap-2 items-end">
-                      <div className="flex-1">
+                    <div key={i} className="flex gap-2 items-end flex-wrap">
+                      <div className="w-full sm:flex-1">
                         <Label className="text-xs">Bahan</Label>
                         <select
                           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
@@ -191,7 +191,7 @@ export function POList({ data, produkList, bahanList }: { data: any[]; produkLis
                           ))}
                         </select>
                       </div>
-                      <div className="w-28">
+                      <div className="flex-1 min-w-[100px]">
                         <Label className="text-xs">Jumlah ({selectedBahan?.satuan || ""})</Label>
                         <Input type="number" step="0.01" value={b.estimatedAmount}
                           onChange={(e) => updateBahan(i, "estimatedAmount", e.target.value)} />
@@ -215,6 +215,7 @@ export function POList({ data, produkList, bahanList }: { data: any[]; produkLis
         </Dialog>
       </CardHeader>
       <CardContent>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -271,9 +272,10 @@ export function POList({ data, produkList, bahanList }: { data: any[]; produkLis
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableBody>
+          </Table>
+        </div>
+        </CardContent>
+      </Card>
   )
 }

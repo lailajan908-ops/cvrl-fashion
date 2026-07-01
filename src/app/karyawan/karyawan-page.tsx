@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Pencil, Clock, DollarSign } from "lucide-react"
+import { Plus, Pencil, Clock, DollarSign, CheckCircle, XCircle } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
@@ -106,6 +106,29 @@ export function KaryawanPage() {
     fetch("/api/karyawan").then((r) => r.json()).then(setEmployees)
   }
 
+  async function handleApprove(emp: any) {
+    const res = await fetch(`/api/karyawan`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: emp.id, email: emp.email, name: emp.name, role: emp.role,
+        isActive: true,
+        noHp: emp.noHp || null, alamat: emp.alamat || null,
+        tanggalMasuk: emp.tanggalMasuk || null,
+        payrollType: emp.payrollType,
+        dailyRate: emp.dailyRate || 0,
+        monthlySalary: emp.monthlySalary || 0,
+        pieceRate: emp.pieceRate || 0,
+      }),
+    })
+    if (!res.ok) { toast.error("Gagal menyetujui"); return }
+    toast.success(`${emp.name} telah disetujui`)
+    fetch("/api/karyawan").then((r) => r.json()).then(setEmployees)
+  }
+
+  const pending = employees.filter(e => !e.isActive)
+  const approved = employees.filter(e => e.isActive)
+
   const payrollLabels: Record<string, string> = {
     HarianTetap: "Harian Tetap",
     BulananTetap: "Bulanan Tetap",
@@ -116,9 +139,9 @@ export function KaryawanPage() {
     <div className="space-y-6">
       {/* Clock In/Out */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <CardTitle>Absensi Hari Ini</CardTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" onClick={() => handleClock("clockIn")} disabled={todayStatus?.clockIn}>
               <Clock className="h-4 w-4 mr-2" /> Clock In
             </Button>
@@ -139,9 +162,57 @@ export function KaryawanPage() {
         </CardContent>
       </Card>
 
+      {/* Pending Approval */}
+      {pending.length > 0 && (
+        <Card className="border-amber-500/30">
+          <CardHeader>
+            <CardTitle className="text-amber-400 flex items-center gap-2">
+              <XCircle className="h-5 w-5" />
+              Menunggu Persetujuan ({pending.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Tanggal Daftar</TableHead>
+                    <TableHead className="w-32">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pending.map((emp: any) => (
+                    <TableRow key={emp.id}>
+                      <TableCell className="font-medium">{emp.name}</TableCell>
+                      <TableCell className="text-xs">{emp.email}</TableCell>
+                      <TableCell><Badge variant="outline">{emp.role}</Badge></TableCell>
+                      <TableCell className="text-xs">{new Date(emp.createdAt).toLocaleDateString("id-ID")}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="outline" size="sm" className="text-green-500 border-green-500/30"
+                            onClick={() => handleApprove(emp)}>
+                            <CheckCircle className="h-3 w-3 mr-1" /> Setujui
+                          </Button>
+                          <Button variant="outline" size="icon" onClick={() => openEdit(emp)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Employee List */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <CardTitle>Daftar Karyawan</CardTitle>
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
             <DialogTrigger render={<Button><Plus className="mr-2 h-4 w-4" /> Tambah Karyawan</Button>} />
@@ -210,6 +281,7 @@ export function KaryawanPage() {
           </Dialog>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -223,10 +295,10 @@ export function KaryawanPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.length === 0 && (
+              {approved.length === 0 && (
                 <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Belum ada karyawan</TableCell></TableRow>
               )}
-              {employees.map((emp: any) => (
+              {approved.map((emp: any) => (
                 <TableRow key={emp.id}>
                   <TableCell className="font-medium">{emp.name}</TableCell>
                   <TableCell className="text-xs">{emp.email}</TableCell>
@@ -249,6 +321,7 @@ export function KaryawanPage() {
               ))}
             </TableBody>
           </Table>
+        </div>
         </CardContent>
       </Card>
     </div>

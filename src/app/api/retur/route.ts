@@ -1,31 +1,33 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "AdminQC")
 
-  const returns = await prisma.customerReturn.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    include: {
-      barcodeUnit: {
-        select: { barcode: true, size: true, color: true, currentStage: true, sewerName: true, produk: { select: { kode: true, nama: true } }, po: { select: { code: true } } },
+    const returns = await prisma.customerReturn.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        barcodeUnit: {
+          select: { barcode: true, size: true, color: true, currentStage: true, sewerName: true, produk: { select: { kode: true, nama: true } }, po: { select: { code: true } } },
+        },
+        returnedBy: { select: { name: true } },
       },
-      returnedBy: { select: { name: true } },
-    },
-  })
+    })
 
-  return Response.json(returns)
+    return Response.json(returns)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const session = await requireApiRole("Owner", "AdminQC")
 
-  const userId = (session.user as any).id
+    const userId = (session.user as any).id
   const { barcode, returnDate, reason, condition, notes } = await req.json()
 
   if (!barcode || !reason || !condition) {
@@ -60,4 +62,7 @@ export async function POST(req: NextRequest) {
   })
 
   return Response.json(result)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }

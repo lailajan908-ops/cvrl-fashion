@@ -1,15 +1,14 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import * as XLSX from "xlsx"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export const dynamic = "force-dynamic"
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "AdminPenjualan")
 
-  // Get all produk with variasi for pre-fill
+    // Get all produk with variasi for pre-fill
   const produkList = await prisma.produk.findMany({
     include: {
       variasi: true,
@@ -88,4 +87,7 @@ export async function GET() {
       "Content-Disposition": `attachment; filename="marketplace-upload.xlsx"`,
     },
   })
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }

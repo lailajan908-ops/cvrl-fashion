@@ -143,6 +143,7 @@ export function ButtonholePage({ userId }: { userId: string }) {
             <CardTitle>Riwayat Lubang Kancing</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -168,11 +169,12 @@ export function ButtonholePage({ userId }: { userId: string }) {
                     <TableCell className="text-xs">{r.notes || "-"}</TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+                </TableBody>
+              </Table>
+            </div>
+            </CardContent>
+          </Card>
+        </div>
 
       <div className="space-y-6">
         <Card>

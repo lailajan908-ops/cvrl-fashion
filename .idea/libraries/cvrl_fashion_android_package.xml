@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="cvrl-fashion-android-package">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/cvrl-fashion-android-package.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

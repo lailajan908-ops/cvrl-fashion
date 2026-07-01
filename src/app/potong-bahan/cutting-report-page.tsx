@@ -140,16 +140,16 @@ export function CuttingReportPage({ poList: initialPoList, bahanList: initialBah
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <CardTitle>Laporan Potong Bahan</CardTitle>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
           <DialogTrigger render={<Button><Plus className="mr-2 h-4 w-4" /> Laporan Potong Baru</Button>} />
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Buat Laporan Potong Bahan</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>PO Produksi</Label>
                   <select
@@ -194,7 +194,7 @@ export function CuttingReportPage({ poList: initialPoList, bahanList: initialBah
                 {details.length === 0 && <p className="text-sm text-muted-foreground">Belum ada detail. Klik Tambah Detail.</p>}
                 {details.map((d, i) => (
                   <div key={i} className="flex gap-2 items-end border p-3 rounded-lg flex-wrap">
-                    <div className="w-36">
+                    <div className="w-full sm:w-36">
                       <Label className="text-xs">Bahan</Label>
                       <select
                         className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
@@ -206,15 +206,15 @@ export function CuttingReportPage({ poList: initialPoList, bahanList: initialBah
                         ))}
                       </select>
                     </div>
-                    <div className="w-24">
+                    <div className="flex-1 min-w-[80px]">
                       <Label className="text-xs">Size</Label>
                       <Input value={d.size} onChange={(e) => updateDetail(i, "size", e.target.value)} placeholder="M" />
                     </div>
-                    <div className="w-24">
+                    <div className="flex-1 min-w-[80px]">
                       <Label className="text-xs">Warna</Label>
                       <Input value={d.warna} onChange={(e) => updateDetail(i, "warna", e.target.value)} placeholder="Hitam" />
                     </div>
-                    <div className="w-20">
+                    <div className="w-full sm:w-20">
                       <Label className="text-xs">Unit</Label>
                       <select
                         className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
@@ -225,22 +225,22 @@ export function CuttingReportPage({ poList: initialPoList, bahanList: initialBah
                         <option value="KG">KG</option>
                       </select>
                     </div>
-                    <div className="w-24">
+                    <div className="flex-1 min-w-[100px]">
                       <Label className="text-xs">Jumlah Digunakan</Label>
                       <Input type="number" step="0.01" min="0" value={d.amountUsed || ""}
                         onChange={(e) => updateDetail(i, "amountUsed", parseFloat(e.target.value) || 0)} />
                     </div>
-                    <div className="w-24">
+                    <div className="flex-1 min-w-[80px]">
                       <Label className="text-xs">Jml Potong</Label>
                       <Input type="number" min="0" value={d.cuttingCount || ""}
                         onChange={(e) => updateDetail(i, "cuttingCount", parseInt(e.target.value) || 0)} />
                     </div>
-                    <div className="w-24">
+                    <div className="flex-1 min-w-[80px]">
                       <Label className="text-xs">Multiplier/pc</Label>
                       <Input type="number" min="1" value={d.perPieceMultiplier}
                         onChange={(e) => updateDetail(i, "perPieceMultiplier", parseInt(e.target.value) || 1)} />
                     </div>
-                    <div className="w-24">
+                    <div className="flex-1 min-w-[80px]">
                       <Label className="text-xs">Hasil (pcs)</Label>
                       <Input type="number" min="0" value={d.resultQty || ""}
                         onChange={(e) => updateDetail(i, "resultQty", parseInt(e.target.value) || 0)} />
@@ -260,6 +260,7 @@ export function CuttingReportPage({ poList: initialPoList, bahanList: initialBah
         </Dialog>
       </CardHeader>
       <CardContent>
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -297,9 +298,10 @@ export function CuttingReportPage({ poList: initialPoList, bahanList: initialBah
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableBody>
+          </Table>
+        </div>
+        </CardContent>
+      </Card>
   )
 }

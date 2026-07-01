@@ -45,6 +45,7 @@ export function InventoryPage() {
           <CardTitle>Progress Produksi per Stage</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -63,7 +64,7 @@ export function InventoryPage() {
                     </TableCell>
                     <TableCell className="font-medium">{s.count}</TableCell>
                     <TableCell>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                   <div className="w-full bg-zinc-700/50 rounded-full h-2">
                         <div className="h-2 rounded-full bg-blue-500" style={{ width: `${(s.count / max) * 100}%` }} />
                       </div>
                     </TableCell>
@@ -72,6 +73,7 @@ export function InventoryPage() {
               })}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -80,6 +82,7 @@ export function InventoryPage() {
           <CardTitle>Stok Bahan Baku & Aksesoris</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -99,7 +102,7 @@ export function InventoryPage() {
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.kode}</TableCell>
                   <TableCell>{b.nama}</TableCell>
-                  <TableCell><span className="text-xs px-2 py-0.5 rounded bg-zinc-100">{b.kategori}</span></TableCell>
+                  <TableCell><span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">{b.kategori}</span></TableCell>
                   <TableCell className={b.stok <= b.stokMinimum ? "text-red-500 font-bold" : ""}>{b.stok} {b.satuan}</TableCell>
                   <TableCell>{b.stokMinimum}</TableCell>
                   <TableCell>
@@ -111,6 +114,7 @@ export function InventoryPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

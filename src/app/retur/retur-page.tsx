@@ -64,7 +64,7 @@ export function ReturPage() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <CardTitle>Retur Customer</CardTitle>
             <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
               <DialogTrigger render={<Button><Plus className="mr-2 h-4 w-4" /> Catat Retur</Button>} />
@@ -127,6 +127,7 @@ export function ReturPage() {
             </Dialog>
           </CardHeader>
           <CardContent>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -154,11 +155,12 @@ export function ReturPage() {
                     <TableCell className="text-xs">{r.returnedBy?.name}</TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+                </TableBody>
+              </Table>
+            </div>
+            </CardContent>
+          </Card>
+        </div>
 
       <div className="space-y-6">
         <Card>

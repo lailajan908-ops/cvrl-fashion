@@ -67,25 +67,141 @@ model Produk {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Bagian 1 - Basic
+  kategoriId    String?
+  kategori      Kategori? @relation(fields: [kategoriId], references: [id])
+  videoUrl      String?
+  promoLongImg  String?
+  whiteBgImg    String?
+
+  // Bagian 2 - Qualification
+  halalCert String?
+  licenseCode String?
+
+  // Bagian 3 - Specification
+  brand          String?
+  material       String?
+  neckline       String?
+  pattern        String?
+  jubahLength    String?
+  sleevesType    String?
+  style          String?
+
+  // Bagian 5 - Size Chart
+  sizeChartImg String?
+
+  // Bagian 6 - Description HTML
+  descHtml String?
+
+  // Bagian 7 - Shipping
+  weight        Float  @default(0)
+  length        Float  @default(0)
+  width         Float  @default(0)
+  height        Float  @default(0)
+  dangerousGoods String @default("None")
+
   variasi       ProdukVariasi[]
   garmentPieces GarmentPiece[]
+  images        ProdukImage[]
+  labels        ProdukLabel[]
+  orderItems    CustomerOrderItem[]
+}
+
+model Kategori {
+  id       String   @id @default(cuid())
+  nama     String   @unique
+  parentId String?
+  produk   Produk[]
+}
+
+model ProdukImage {
+  id        String @id @default(cuid())
+  produkId  String
+  produk    Produk @relation(fields: [produkId], references: [id], onDelete: Cascade)
+  url       String
+  warna     String?
+  isPrimary Boolean @default(false)
+  order     Int     @default(0)
 }
 
 model ProdukVariasi {
-  id          String   @id @default(cuid())
-  produkId    String
-  produk      Produk   @relation(fields: [produkId], references: [id], onDelete: Cascade)
-  size        String
-  warna       String
-  sku         String   @unique
-  fotoPath    String?
-  fotoUrl     String?
-  namaFoto    String?
+  id             String   @id @default(cuid())
+  produkId       String
+  produk         Produk   @relation(fields: [produkId], references: [id], onDelete: Cascade)
+  size           String
+  warna          String
+  sku            String   @unique
+  fotoPath       String?
+  fotoUrl        String?
+  namaFoto       String?
+  hargaProduksi  Float    @default(0)
+  barcode        String?
+  price          Float    @default(0)
+  specialPrice   Float?
+  hargaDiskon    Float?
+  stock          Int      @default(0)
+  isActive       Boolean  @default(true)
 
   @@unique([produkId, size, warna])
   @@index([sku])
 
-  poItems POItem[]
+  poItems     POItem[]
+  promoItems  PromoItem[]
+  orderItems  CustomerOrderItem[]
+}
+
+model Promo {
+  id          String   @id @default(cuid())
+  nama        String
+  jenis       String   // "persen" or "nominal"
+  nilai       Float    // 20 (for 20%) or 25000 (for nominal)
+  tglMulai    DateTime
+  tglSelesai  DateTime
+  status      String   @default("Draft") // Draft, Active, Completed, Cancelled
+  marketplace String   @default("All") // All, Shopee, Lazada, Akulaku
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items PromoItem[]
+}
+
+model PromoItem {
+  id              String       @id @default(cuid())
+  promoId         String
+  promo           Promo        @relation(fields: [promoId], references: [id], onDelete: Cascade)
+  produkVariasiId String
+  variasi         ProdukVariasi @relation(fields: [produkVariasiId], references: [id])
+  createdAt       DateTime     @default(now())
+
+  @@unique([promoId, produkVariasiId])
+}
+
+model PromoLabel {
+  id        String   @id @default(cuid())
+  nama      String   @unique
+  icon      String?
+  color     String?
+  otomatis  Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  assignments ProdukLabel[]
+}
+
+model ProdukLabel {
+  id        String     @id @default(cuid())
+  produkId  String
+  produk    Produk     @relation(fields: [produkId], references: [id], onDelete: Cascade)
+  labelId   String
+  label     PromoLabel @relation(fields: [labelId], references: [id])
+  warna     String?    // null = all colors
+  size      String?    // null = all sizes
+  sku       String?    // null = all SKUs
+  createdAt DateTime   @default(now())
+
+  @@unique([produkId, labelId, warna, size, sku])
+  @@index([produkId])
+  @@index([labelId])
 }
 
 model SewingPartner {
@@ -442,4 +558,93 @@ model ChatMessage {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String
+  address   String
+  kota      String
+  provinsi  String
+  kodePos   String?
+  password  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses CustomerAddress[]
+  orders    CustomerOrder[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label      String   @default("Utama")
+  name       String
+  phone      String
+  address    String
+  kota       String
+  provinsi   String
+  kodePos    String?
+  catatan    String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+}
+
+model CustomerOrder {
+  id               String   @id @default(cuid())
+  invoice          String   @unique
+  customerId       String?
+  customer         Customer? @relation(fields: [customerId], references: [id])
+  customerName     String
+  customerPhone    String
+  customerAddress  String
+  customerKota     String
+  customerProvinsi String
+  catatan          String?
+  status           String   @default("Menunggu Pembayaran")
+  paymentMethod    String
+  paymentStatus    String   @default("Pending")
+  shippingCost     Float    @default(0)
+  totalAmount      Float    @default(0)
+  grandTotal       Float    @default(0)
+  kurir            String?
+  resi             String?
+  paymentProof     String?
+  paidAt           DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  items CustomerOrderItem[]
+
+  @@index([invoice])
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CustomerOrderItem {
+  id              String        @id @default(cuid())
+  orderId         String
+  order           CustomerOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  produkId        String
+  produk          Produk        @relation(fields: [produkId], references: [id])
+  produkVariasiId String
+  variasi         ProdukVariasi @relation(fields: [produkVariasiId], references: [id])
+  namaProduk      String
+  size            String
+  warna           String
+  quantity        Int           @default(1)
+  price           Float         @default(0)
+  subtotal        Float         @default(0)
+
+  @@index([orderId])
+  @@index([produkVariasiId])
 }

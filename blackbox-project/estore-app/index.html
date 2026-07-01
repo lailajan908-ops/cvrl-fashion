@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RL E-Store</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <img class="brand__icon" src="assets/icon-app.svg" alt="RL" />
+          <div class="brand__text">
+            <div class="brand__name">RL</div>
+            <div class="brand__tag">Premium E-Store</div>
+          </div>
+        </div>
+
+        <nav class="topnav" aria-label="Primary">
+          <a class="navlink" href="#/home">Home</a>
+          <a class="navlink" href="#/katalog">Katalog</a>
+          <a class="navlink" href="#/keranjang">Keranjang</a>
+          <a class="navlink" href="#/profil">Profil</a>
+          <a class="navlink" href="#/about">About</a>
+        </nav>
+
+        <div class="topbar__actions">
+          <button class="chip" id="cartChip" type="button" aria-label="Keranjang">
+            🛒 <span id="cartCount">0</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="container">
+        <!-- HOME -->
+        <section class="page" data-page="home" hidden>
+          <div class="hero">
+            <div>
+              <h1 class="hero__title">Belanja warna, size, & harga varian—cepat & jelas.</h1>
+              <p class="hero__subtitle">
+                Tanpa video. Fokus pada produk.
+              </p>
+              <div class="hero__cta">
+                <a class="btn btn--gold" href="#/katalog">Lihat Katalog</a>
+              </div>
+            </div>
+            <div class="hero__badge">
+              <div class="badge">
+                <div class="badge__kpi" id="kpiBestSeller">0</div>
+                <div class="badge__label">Best Seller</div>
+              </div>
+              <div class="badge">
+                <div class="badge__kpi">5+</div>
+                <div class="badge__label">Size tersedia</div>
+              </div>
+            </div>
+          </div>
+
+          <h2 class="sectionTitle">Produk Unggulan</h2>
+          <div class="grid" id="featuredGrid"></div>
+
+          <h2 class="sectionTitle">Produk Terlaris</h2>
+          <div class="grid" id="bestsellerGrid"></div>
+
+          <div class="cats">
+            <div class="cats__title">Kategori singkat</div>
+            <div class="cats__list" id="categoryChips"></div>
+          </div>
+        </section>
+
+        <!-- KATALOG -->
+        <section class="page" data-page="katalog" hidden>
+          <div class="pageHeader">
+            <div>
+              <h1 class="pageHeader__title">Katalog Produk</h1>
+              <p class="pageHeader__subtitle">Produk otomatis dari Master Produk: warna, size, harga per varian, status stok.</p>
+            </div>
+            <div class="filters">
+              <label class="field">
+                <span>Filter warna</span>
+                <select id="filterColor">
+                  <option value="__all__">Semua</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Filter status</span>
+                <select id="filterStock">
+                  <option value="__all__">Semua</option>
+                  <option value="in_stock">In Stock</option>
+                  <option value="out_of_stock">Out of Stock</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid grid--cards" id="katalogGrid"></div>
+        </section>
+
+        <!-- DETAIL -->
+        <section class="page" data-page="detail" hidden>
+          <div class="crumbs"><a href="#/home">Home</a> / <a href="#/katalog" id="crumbKatalog">Katalog</a> / <span id="crumbTitle">Detail</span></div>
+
+          <div class="detail">
+            <div class="detail__gallery">
+              <div class="productMedia" id="detailMedia" aria-label="Foto produk"></div>
+              <div class="muted">Tanpa video. Hanya gambar produk.</div>
+            </div>
+
+            <div class="detail__panel">
+              <h1 class="detail__title" id="detailTitle">Produk</h1>
+              <div class="detail__meta">
+                <div class="metaRow">
+                  <span class="metaLabel">Kategori</span>
+                  <span class="metaValue" id="detailCategory">-</span>
+                </div>
+                <div class="metaRow">
+                  <span class="metaLabel">Kode</span>
+                  <span class="metaValue" id="detailSku">-</span>
+                </div>
+              </div>
+
+              <div class="variant">
+                <div class="variant__sectionTitle">Pilih warna</div>
+                <div class="pillRow" id="variantColors"></div>
+
+                <div class="variant__sectionTitle">Pilih size</div>
+                <div class="pillRow" id="variantSizes"></div>
+              </div>
+
+              <div class="priceBox">
+                <div class="priceBox__label">Harga</div>
+                <div class="priceBox__price" id="detailPrice">Rp 0</div>
+                <div class="priceBox__stock" id="detailStock">Status stok: -</div>
+              </div>
+
+              <div class="actions">
+                <button class="btn btn--gold" id="btnAddToCart" type="button">Tambah ke Keranjang</button>
+                <a class="btn btn--outline" id="btnBuyNow" href="#/checkout">Beli sekarang</a>
+              </div>
+
+              <div class="finePrint">
+                Harga & stok update dari varian yang dipilih.
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="muted">
+            Catatan: UI demo ini menggunakan data contoh. Integrasi ke backend dilakukan di tahap berikutnya.
+          </div>
+        </section>
+
+        <!-- KERANJANG -->
+        <section class="page" data-page="keranjang" hidden>
+          <div class="pageHeader">
+            <div>
+              <h1 class="pageHeader__title">Keranjang</h1>
+              <p class="pageHeader__subtitle">Browse bebas (tanpa login). Login WA wajib saat checkout.</p>
+            </div>
+          </div>
+
+          <div class="cart" id="cartList"></div>
+
+          <div class="cart__footer">
+            <div class="cart__total">
+              <div class="muted">Total</div>
+              <div class="totalPrice" id="cartTotal">Rp 0</div>
+            </div>
+            <a class="btn btn--gold" href="#/checkout">Checkout</a>
+          </div>
+        </section>
+
+        <!-- CHECKOUT -->
+        <section class="page" data-page="checkout" hidden>
+          <div class="pageHeader">
+            <div>
+              <h1 class="pageHeader__title">Checkout</h1>
+              <p class="pageHeader__subtitle">Login WA wajib sebelum menyelesaikan pesanan.</p>
+            </div>
+          </div>
+
+          <div class="checkout">
+            <div class="checkout__left">
+              <div class="card">
+                <div class="card__title">1) Login WA</div>
+                <div class="card__body">
+                  <div class="loginRow">
+                    <label class="field">
+                      <span>Nomor HP</span>
+                      <input id="waPhone" placeholder="08xxxxxxxxxx" inputmode="numeric" />
+                    </label>
+                    <button class="btn btn--outline" id="btnWA" type="button">Masuk via WhatsApp</button>
+                  </div>
+                  <div class="statusLine" id="waStatus">Belum login.</div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card__title">2) Data Pengiriman</div>
+                <div class="card__body grid2">
+                  <label class="field">
+                    <span>Nama</span>
+                    <input id="shipName" placeholder="Nama penerima" />
+                  </label>
+                  <label class="field">
+                    <span>Nomor HP</span>
+                    <input id="shipPhone" placeholder="08xxxxxxxxxx" inputmode="numeric" />
+                  </label>
+                  <label class="field gridFull">
+                    <span>Alamat lengkap</span>
+                    <input id="shipAddress" placeholder="Jalan, No, RT/RW, Kelurahan" />
+                  </label>
+                  <label class="field">
+                    <span>Kota</span>
+                    <input id="shipCity" placeholder="Kota" />
+                  </label>
+                  <label class="field">
+                    <span>Kurir / logistik</span>
+                    <select id="shipCourier">
+                      <option value="jne">JNE</option>
+                      <option value="jnt">J&T</option>
+                      <option value="sicepat">SiCepat</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card__title">3) Metode Pembayaran</div>
+                <div class="card__body">
+                  <div class="paymentGrid" id="paymentMethods"></div>
+                  <div class="statusBox">
+                    <div class="statusBox__title">Status pembayaran</div>
+                    <div class="statusBox__value" id="payStatus">Pilih metode pembayaran.</div>
+                    <button class="btn btn--outline" id="btnSimPay" type="button">Simulasi bayar (UI)</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="checkout__right">
+              <div class="card stickyCard">
+                <div class="card__title">Ringkasan Pesanan</div>
+                <div class="card__body" id="checkoutSummary"></div>
+                <div class="dividerSm"></div>
+                <div class="sumRow">
+                  <span class="muted">Total</span>
+                  <span class="strong" id="checkoutTotal">Rp 0</span>
+                </div>
+                <div class="dividerSm"></div>
+                <button class="btn btn--gold btn--wide" id="btnPlaceOrder" type="button">
+                  Buat Pesanan
+                </button>
+                <div class="finePrint">
+                  Setelah buat pesanan (demo), status akan disimulasikan.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROFIL -->
+        <section class="page" data-page="profil" hidden>
+          <div class="pageHeader">
+            <div>
+              <h1 class="pageHeader__title">Profil Pengguna</h1>
+              <p class="pageHeader__subtitle">Data akun, alamat pengiriman, riwayat pesanan, status order.</p>
+            </div>
+          </div>
+
+          <div class="grid grid--cards">
+            <div class="card">
+              <div class="card__title">Data akun</div>
+              <div class="card__body">
+                <div class="kv"><span>Nama</span><span id="profileName">-</span></div>
+                <div class="kv"><span>Nomor HP</span><span id="profilePhone">-</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card__title">Alamat pengiriman</div>
+              <div class="card__body">
+                <div class="kv"><span>Alamat</span><span id="profileAddress">-</span></div>
+                <div class="kv"><span>Kota</span><span id="profileCity">-</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card__title">Riwayat pesanan</div>
+              <div class="card__body">
+                <div class="muted">Belum ada pesanan pada demo ini.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="muted">
+            Login WA dan penyimpanan riwayat pesanan akan diintegrasikan pada sistem backend.
+          </div>
+        </section>
+
+        <!-- ABOUT -->
+        <section class="page" data-page="about" hidden>
+          <div class="pageHeader">
+            <div>
+              <h1 class="pageHeader__title">About</h1>
+              <p class="pageHeader__subtitle">Cerita usaha, tentang brand RL, visi & misi.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__body">
+              <h2 class="sectionTitle sectionTitle--tight">Tentang Brand RL</h2>
+              <p class="muted">
+                RL hadir untuk memberikan produk premium dengan pilihan warna dan size yang lengkap.
+                Kami mengutamakan kecepatan, kejelasan harga per varian, dan pengalaman belanja yang rapi.
+              </p>
+              <h3 class="sectionSubTitle">Visi & Misi</h3>
+              <ul class="list">
+                <li>Mempermudah pelanggan memilih varian yang tepat.</li>
+                <li>Menghadirkan proses order yang transparan.</li>
+                <li>Menjadi brand yang profesional & terpercaya.</li>
+              </ul>
+
+              <div class="divider"></div>
+
+              <div class="callout">
+                <a class="btn btn--gold btn--wide" id="btnToProdSystem" href="https://example.com/management-system" target="_blank" rel="noopener">
+                  Masuk Sistem Manajemen Produksi
+                </a>
+                <div class="finePrint">
+                  Tombol ini hanya redirect ke sistem produksi (bukan bagian dari e-store).
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="bottombar">
+        <a class="bottomlink" href="#/home">Home</a>
+        <a class="bottomlink" href="#/katalog">Katalog</a>
+        <a class="bottomlink" href="#/keranjang">Keranjang</a>
+        <a class="bottomlink" href="#/profil">Profil</a>
+        <a class="bottomlink" href="#/about">About</a>
+      </footer>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

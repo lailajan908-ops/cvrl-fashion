@@ -31,7 +31,7 @@ function statusBadge(status: string) {
     Completed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
     Cancelled: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
   }
-  return map[status] || "bg-gray-100 text-gray-800"
+  return map[status] || "bg-zinc-800 text-zinc-400"
 }
 
 export function PaymentsPage() {
@@ -236,7 +236,7 @@ export function PaymentsPage() {
                     <Label>Jumlah</Label>
                     <Input type="number" step="0.01" value={pmAmount} onChange={(e) => setPmAmount(e.target.value)} placeholder="0" required />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Metode</Label>
                       <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm" value={pmMethod} onChange={(e) => setPmMethod(e.target.value)}>
@@ -275,7 +275,7 @@ export function PaymentsPage() {
               <DialogContent className="max-w-md">
                 <DialogHeader><DialogTitle>Tambah Penjualan E-commerce</DialogTitle></DialogHeader>
                 <form onSubmit={handleEcoSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Platform</Label>
                       <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm" value={ecoPlatform} onChange={(e) => setEcoPlatform(e.target.value)}>
@@ -293,7 +293,7 @@ export function PaymentsPage() {
                     <Label>Order ID</Label>
                     <Input value={ecoOrderId} onChange={(e) => setEcoOrderId(e.target.value)} placeholder="No. order dari platform" required />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Tanggal Order</Label>
                       <Input type="date" value={ecoOrderDate} onChange={(e) => setEcoOrderDate(e.target.value)} />
@@ -303,7 +303,7 @@ export function PaymentsPage() {
                       <Input type="number" step="0.01" value={ecoTotal} onChange={(e) => setEcoTotal(e.target.value)} placeholder="0" required />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Ongkos Kirim</Label>
                       <Input type="number" step="0.01" value={ecoShipping} onChange={(e) => setEcoShipping(e.target.value)} placeholder="0" />
@@ -379,27 +379,27 @@ export function PaymentsPage() {
       <div className="flex flex-wrap gap-3 items-end">
         <div className="space-y-1">
           <Label className="text-xs">Status</Label>
-          <select className="flex h-8 rounded-md border border-input bg-transparent px-2 text-xs" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <select className="flex h-9 rounded-md border border-input bg-transparent px-2 text-xs" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="">All Status</option>
             {(tab === "payments" ? STATUSES : ECO_STATUSES).map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Platform</Label>
-          <select className="flex h-8 rounded-md border border-input bg-transparent px-2 text-xs" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
+          <select className="flex h-9 rounded-md border border-input bg-transparent px-2 text-xs" value={filterPlatform} onChange={(e) => setFilterPlatform(e.target.value)}>
             <option value="">All Platforms</option>
             {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Dari</Label>
-          <Input type="date" className="h-8 w-36 text-xs" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
+          <Input type="date" className="h-9 w-full sm:w-36 text-xs" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Sampai</Label>
-          <Input type="date" className="h-8 w-36 text-xs" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
+          <Input type="date" className="h-9 w-full sm:w-36 text-xs" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
         </div>
-        <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setFilterStatus(""); setFilterPlatform(""); setFilterFrom(""); setFilterTo("") }}>
+        <Button variant="ghost" size="sm" className="h-9 text-xs" onClick={() => { setFilterStatus(""); setFilterPlatform(""); setFilterFrom(""); setFilterTo("") }}>
           Reset
         </Button>
       </div>
@@ -408,6 +408,7 @@ export function PaymentsPage() {
       <TabsContent value="payments">
         <Card>
           <CardContent className="p-0">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -446,7 +447,7 @@ export function PaymentsPage() {
                     <TableCell className="text-xs">{p.recordedBy?.name}</TableCell>
                     <TableCell>
                       <select
-                        className="h-7 text-xs rounded border border-input bg-transparent px-1"
+                        className="h-9 text-xs rounded border border-input bg-transparent px-2"
                         value={p.status}
                         onChange={(e) => updatePaymentStatus(p.id, e.target.value)}
                       >
@@ -457,6 +458,7 @@ export function PaymentsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
@@ -465,6 +467,7 @@ export function PaymentsPage() {
       <TabsContent value="ecommerce">
         <Card>
           <CardContent className="p-0">
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -507,7 +510,7 @@ export function PaymentsPage() {
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <select
-                          className="h-7 text-xs rounded border border-input bg-transparent px-1"
+                          className="h-9 text-xs rounded border border-input bg-transparent px-2"
                           value={s.status}
                           onChange={(e) => updateEcoStatus(s.id, e.target.value)}
                         >
@@ -517,19 +520,20 @@ export function PaymentsPage() {
                     </TableRow>
                   )
                 })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </TabsContent>
+                </TableBody>
+              </Table>
+            </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
       {/* Detail E-commerce Sale Dialog */}
       <Dialog open={openEcoDetail} onOpenChange={setOpenEcoDetail}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl">
           <DialogHeader><DialogTitle>Detail Penjualan {detailSale?.platform}</DialogTitle></DialogHeader>
           {detailSale && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div><span className="text-muted-foreground">Order ID:</span> <span className="font-mono">{detailSale.orderId}</span></div>
                 <div><span className="text-muted-foreground">Customer:</span> {detailSale.customerName || "-"}</div>
                 <div><span className="text-muted-foreground">Total:</span> Rp {detailSale.totalAmount.toLocaleString("id-ID")}</div>
@@ -547,6 +551,7 @@ export function PaymentsPage() {
                     <DollarSign className="h-3 w-3 mr-1" /> Bayar
                   </Button>
                 </div>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -572,6 +577,7 @@ export function PaymentsPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </div>
 
               {detailSale.notes && (

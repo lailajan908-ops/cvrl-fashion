@@ -1,29 +1,31 @@
 import { NextRequest } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
 
-  const reports = await prisma.cuttingReport.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      po: { select: { code: true } },
-      cutBy: { select: { name: true } },
-      details: { include: { bahan: { select: { kode: true, nama: true, satuan: true } } } },
-    },
-  })
+    const reports = await prisma.cuttingReport.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        po: { select: { code: true } },
+        cutBy: { select: { name: true } },
+        details: { include: { bahan: { select: { kode: true, nama: true, satuan: true } } } },
+      },
+    })
 
-  return Response.json(reports)
+    return Response.json(reports)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return Response.json({ error: "Unauthorized" }, { status: 401 })
+  try {
+    const session = await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
 
-  const userId = (session.user as any).id
+    const userId = (session.user as any).id
   const body = await req.json()
   const { poId, reportDate, panelLength, panelCount, photoPath, details } = body
 
@@ -161,4 +163,7 @@ export async function POST(req: NextRequest) {
   })
 
   return Response.json(report)
+  } catch (err) {
+    return handleApiAuthError(err)
+  }
 }
