@@ -87,9 +87,7 @@ export function LoginPageContent() {
 
   return (
     <div className="relative min-h-screen overflow-y-auto bg-black selection:bg-amber-500/30">
-      <video autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover opacity-30">
-        <source src="/splash.mp4" type="video/mp4" />
-      </video>
+      <img src="/poto background.png" alt="Background" className="absolute inset-0 w-full h-full object-cover opacity-40" />
 
       <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/60 to-black/90" />
       <div className="absolute inset-0 bg-gradient-to-tr from-amber-950/20 via-transparent to-amber-950/10 animate-pulse" />

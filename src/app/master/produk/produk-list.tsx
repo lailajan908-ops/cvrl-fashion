@@ -35,7 +35,7 @@ type SizeRow = {
 }
 
 const WARNA_UMUM = ["HITAM", "PUTIH", "NAVY", "ARMY", "MAROON", "COKSU", "TOSKA", "MINT", "SAGE", "ABU", "KUNIT", "PINK", "UNGU", "MERAH", "HIJAU"]
-const SIZE_LIST = ["S", "M", "L", "XL", "XXL", "3XL", "4XL", "5XL"]
+const SIZE_LIST = ["S", "M", "L", "XL", "XXL", "XXXL", "4XL", "5XL"]
 
 // ---------- Labels config ----------
 const LABEL_STYLE: Record<string, { bg: string; text: string; border: string }> = {

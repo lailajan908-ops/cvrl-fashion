@@ -19,7 +19,7 @@ async function main() {
     { label: "Cream", path: "-9" },
   ]
 
-  const sizes = ["M", "L", "XL", "2XL", "3XL"]
+  const sizes = ["M", "L", "XL", "2XL", "XXXL"]
 
   const images = [
     "https://img.lazcdn.com/g/p/fbe75ee57704c51089b0953a1d56d279.png_720x720q80.png_.webp",
