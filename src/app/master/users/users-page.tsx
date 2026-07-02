@@ -15,7 +15,7 @@ const ROLES = ["Karyawan", "AdminPenjualan", "AdminGudang", "AdminQC", "ManagerP
 
 interface UserItem {
   id: string
-  email: string
+  email: string | null
   name: string | null
   role: string
   isActive: boolean

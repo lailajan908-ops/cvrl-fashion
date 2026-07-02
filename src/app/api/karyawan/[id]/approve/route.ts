@@ -4,13 +4,14 @@ import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireApiRole("Owner")
 
     const body = await req.json()
     const { roles } = body
+    const { id } = await params
 
     if (!roles || !Array.isArray(roles) || roles.length === 0) {
       return NextResponse.json({ error: "Minimal 1 role wajib dipilih" }, { status: 400 })
@@ -21,7 +22,7 @@ export async function POST(
     }
 
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: "ACTIVE",
         isActive: true,
