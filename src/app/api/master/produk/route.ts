@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/db"
 import { requireApiRole, handleApiAuthError } from "@/lib/api-auth"
 import { generateVariantSKU } from "@/lib/sku-generator"
+import { Prisma } from "@/generated/prisma/client"
 
 const produkInclude = {
   variasi: { orderBy: [{ warna: "asc" }, { size: "asc" }] as any },
@@ -29,8 +30,22 @@ export async function GET(req: NextRequest) {
     })
     return Response.json(produkList)
   } catch (err) {
-    return handleApiAuthError(err)
+    return handleApiError(err)
   }
+}
+
+function handleApiError(err: unknown) {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2002") {
+      const target = (err.meta?.target as string[])?.join(", ") || "field"
+      return Response.json({ error: `Data sudah ada: ${target}` }, { status: 409 })
+    }
+    return Response.json({ error: `Database error: ${err.message}` }, { status: 500 })
+  }
+  if (err instanceof SyntaxError) {
+    return Response.json({ error: "Format data tidak valid" }, { status: 400 })
+  }
+  return handleApiAuthError(err)
 }
 
 export async function POST(req: NextRequest) {
@@ -70,6 +85,7 @@ export async function POST(req: NextRequest) {
             barcode: v.barcode || null,
             price: v.price || 0,
             hargaDiskon: v.hargaDiskon || null,
+            hargaProduksi: v.hargaProduksi || 0,
             stock: v.stock || 0,
             isActive: v.isActive ?? true,
           }))
@@ -104,7 +120,7 @@ export async function POST(req: NextRequest) {
 
     return Response.json(produk)
   } catch (err) {
-    return handleApiAuthError(err)
+    return handleApiError(err)
   }
 }
 
@@ -142,6 +158,7 @@ export async function PUT(req: NextRequest) {
             barcode: v.barcode || null,
             price: v.price || 0,
             hargaDiskon: v.hargaDiskon || null,
+            hargaProduksi: v.hargaProduksi || 0,
             stock: v.stock || 0,
             isActive: v.isActive ?? true,
           }))
@@ -176,7 +193,7 @@ export async function PUT(req: NextRequest) {
 
     return Response.json(produk)
   } catch (err) {
-    return handleApiAuthError(err)
+    return handleApiError(err)
   }
 }
 
@@ -188,6 +205,6 @@ export async function DELETE(req: NextRequest) {
     await prisma.produk.delete({ where: { id } })
     return Response.json({ success: true })
   } catch (err) {
-    return handleApiAuthError(err)
+    return handleApiError(err)
   }
 }

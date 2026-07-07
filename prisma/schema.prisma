@@ -40,6 +40,9 @@ model User {
   sales                Sale[]
   payments             Payment[]
   chatMessages         ChatMessage[]
+  shoppingLists        ShoppingList[]
+  approvedShoppingLists ShoppingList[] @relation("ShoppingListApprovedBy")
+  diterimaShoppingLists ShoppingList[] @relation("ShoppingListDiterimaBy")
 }
 
 model Bahan {
@@ -57,6 +60,49 @@ model Bahan {
 
   poBahanEstimasis POBahanEstimasi[]
   cuttingDetails   CuttingReportDetail[]
+  shoppingListItems ShoppingListItem[]
+}
+
+model ShoppingList {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  status        String   @default("Draft") // Draft, PendingApproval, Approved, Diterima, Done, Cancelled
+  notes         String?
+  buktiUrl      String?  // Foto surat jalan dari supplier/toko
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  approvedById  String?
+  approvedBy    User?    @relation("ShoppingListApprovedBy", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  diterimaById  String?
+  diterimaBy    User?    @relation("ShoppingListDiterimaBy", fields: [diterimaById], references: [id])
+  diterimaAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items ShoppingListItem[]
+
+  @@index([code])
+  @@index([status])
+  @@index([createdById])
+}
+
+model ShoppingListItem {
+  id             String       @id @default(cuid())
+  shoppingListId String
+  shoppingList   ShoppingList @relation(fields: [shoppingListId], references: [id], onDelete: Cascade)
+  bahanId        String
+  bahan          Bahan        @relation(fields: [bahanId], references: [id])
+  warna          String
+  rolls          String       @default("") // Comma-separated roll weights: "25.55, 25.80, 25.80, 25.90"
+  totalKg        Float        @default(0)
+  totalMeter     Float        @default(0)
+  hargaPerKg     Float        @default(0)
+  hargaPerMeter  Float        @default(0)
+  createdAt      DateTime     @default(now())
+
+  @@index([shoppingListId])
+  @@index([bahanId])
 }
 
 model Produk {

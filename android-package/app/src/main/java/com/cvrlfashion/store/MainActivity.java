@@ -23,7 +23,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String STORE_URL = "https://cvrl-fashion.vercel.app/store";
+    private static final String STORE_URL = "https://cvrl-fashion.vercel.app";
     private static final String[] ALLOWED_DOMAINS = {
             "cvrl-fashion.vercel.app",
             "cvrl-fashion.vercel.app"

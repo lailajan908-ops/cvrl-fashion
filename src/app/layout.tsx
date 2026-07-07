@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next"
 import { Toaster } from "@/components/ui/sonner"
 import { SessionProvider } from "@/components/session-provider"
+import { LanguageProvider } from "@/lib/language-context"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "R&amp;L Fashion",
-  description: "Sistem Manajemen Produksi & Penjualan Fashion",
+  title: "R&amp;L Fashion AI",
+  description: "Sistem Manajemen Produksi & Penjualan Fashion — AI-Powered",
   manifest: "/manifest.json",
   icons: { icon: "/icon-app.png", apple: "/icon-app.png" },
   appleWebApp: { capable: true, title: "R&L Fashion", statusBarStyle: "black-translucent" },
@@ -41,8 +42,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="h-full">
         <SessionProvider>
-          {children}
-          <Toaster />
+          <LanguageProvider>
+            {children}
+            <Toaster />
+          </LanguageProvider>
         </SessionProvider>
         <script dangerouslySetInnerHTML={{
           __html: `

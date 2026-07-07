@@ -123,4 +123,11 @@
   .card-luxury {
     @apply bg-zinc-900/80 backdrop-blur-xl border border-zinc-800/60 rounded-2xl shadow-xl;
   }
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
 }

@@ -1,0 +1,3 @@
+# Using npx (no installation required)
+npx @google/gemini-cli
+npm install -g @google/gemini-cli

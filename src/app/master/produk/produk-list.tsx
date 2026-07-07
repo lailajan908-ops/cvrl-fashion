@@ -18,7 +18,7 @@ import { SIZE_CODE, CODE_SIZE, generateVariantSKU } from "@/lib/sku-generator"
 // ---------- Types ----------
 type PromoLabel = { id: string; nama: string; icon: string | null; color: string | null; otomatis: boolean; order: number }
 type ProdukLabel = { id: string; labelId: string; warna: string | null; size: string | null; sku: string | null; label: PromoLabel }
-type Variasi = { id: string; size: string; warna: string; sku: string; barcode: string | null; price: number; hargaDiskon: number | null; stock: number; isActive: boolean }
+type Variasi = { id: string; size: string; warna: string; sku: string; barcode: string | null; price: number; hargaDiskon: number | null; hargaProduksi: number; stock: number; isActive: boolean }
 type ProdukImage = { id?: string; url: string; warna?: string | null; isPrimary: boolean; order: number }
 type Produk = {
   id: string; kode: string; nama: string; deskripsi: string | null
@@ -32,9 +32,10 @@ type WarnaFoto = { warna: string; photos: { url: string; isPrimary: boolean }[] 
 type SizeRow = {
   size: string; sku: string; barcode: string
   price: string; hargaDiskon: string; stock: string; isActive: boolean
+  hargaModal: string
 }
 
-const WARNA_UMUM = ["HITAM", "PUTIH", "NAVY", "ARMY", "MAROON", "COKSU", "TOSKA", "MINT", "SAGE", "ABU", "KUNIT", "PINK", "UNGU", "MERAH", "HIJAU"]
+const WARNA_UMUM = ["HITAM", "PUTIH", "NAVY", "ARMY", "MAROON", "COKSU", "TOSKA", "MINT", "SAGE", "ABU", "KUNIT", "PINK", "UNGU", "MERAH", "HIJAU", "BIRU", "COKLAT", "KREM", "CORAL", "SALEM", "BROKEN WHITE", "CHARCOAL", "IVORY", "BEIGE", "BURGUNDY", "OLIVE", "TEAL", "ROSE", "LAVENDER", "PEACH", "DARK GREEN", "LIME", "PLUM", "GOLD", "SILVER", "BRONZE", "COPPER", "RUST", "TERRA", "MAUVE", "BLUSH", "CHAMPAGNE"]
 const SIZE_LIST = ["S", "M", "L", "XL", "XXL", "XXXL", "4XL", "5XL"]
 
 // ---------- Labels config ----------
@@ -132,7 +133,7 @@ export function ProdukList({ data }: { data: Produk[] }) {
           if (!existing.find(r => r.size === s)) {
             existing.push({
               size: s, sku: generateVariantSKU(kode, wd.warna, s),
-              barcode: "", price: "", hargaDiskon: "", stock: "0", isActive: true
+              barcode: "", price: "", hargaDiskon: "", stock: "0", isActive: true, hargaModal: ""
             })
           }
           m.set(wd.warna, existing)
@@ -178,7 +179,7 @@ export function ProdukList({ data }: { data: Produk[] }) {
         if (!m.has(wd.warna)) {
           m.set(wd.warna, selectedSizes.map(s => ({
             size: s, sku: generateVariantSKU(kode, wd.warna, s),
-            barcode: "", price: "", hargaDiskon: "", stock: "0", isActive: true
+            barcode: "", price: "", hargaDiskon: "", stock: "0", isActive: true, hargaModal: ""
           })))
         }
       }
@@ -294,7 +295,8 @@ export function ProdukList({ data }: { data: Produk[] }) {
       const rows = item.variasi.filter(v => v.warna === w).map(v => ({
         size: v.size, sku: v.sku, barcode: v.barcode || "",
         price: String(v.price || ""), hargaDiskon: String(v.hargaDiskon || ""),
-        stock: String(v.stock || ""), isActive: v.isActive ?? true
+        stock: String(v.stock || ""), isActive: v.isActive ?? true,
+        hargaModal: String(v.hargaProduksi || "")
       }))
       sm.set(w, rows)
     }
@@ -310,10 +312,6 @@ export function ProdukList({ data }: { data: Produk[] }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!kode || !nama) { toast.error("Kode dan nama wajib diisi"); return }
-
-    for (const wd of warnaData) {
-      if (wd.photos.length === 0) { toast.error(`Warna ${wd.warna} belum memiliki foto`); return }
-    }
 
     setLoading(true)
 
@@ -331,6 +329,7 @@ export function ProdukList({ data }: { data: Produk[] }) {
           barcode: r.barcode || null,
           price: Number(r.price) || 0,
           hargaDiskon: r.hargaDiskon ? Number(r.hargaDiskon) : null,
+          hargaProduksi: Number(r.hargaModal) || 0,
           stock: Number(r.stock) || 0,
           isActive: r.isActive,
         })
@@ -343,14 +342,14 @@ export function ProdukList({ data }: { data: Produk[] }) {
         for (const size of selectedSizes) {
           variasi.push({
             size, warna: wd.warna, sku: generateVariantSKU(kode, wd.warna, size),
-            price: 0, stock: 0, isActive: true
+            price: 0, stock: 0, isActive: true, hargaProduksi: 0
           })
         }
       }
     }
 
     if (variasi.length === 0) {
-      variasi.push({ size: "ONESIZE", warna: "STANDARD", sku: kode, price: 0, stock: 0, isActive: true })
+      variasi.push({ size: "ONESIZE", warna: "STANDARD", sku: kode, price: 0, stock: 0, isActive: true, hargaProduksi: 0 })
     }
 
     const payload: any = {
@@ -510,7 +509,7 @@ export function ProdukList({ data }: { data: Produk[] }) {
 
                   {/* === WARNA (LEVEL 1 VARIAN) === */}
                   <div className="border border-zinc-800 rounded-lg p-4 space-y-4">
-                    <h3 className="text-sm font-medium text-amber-400">Varian Warna <span className="text-[10px] text-zinc-500 font-normal">(wajib foto)</span></h3>
+                    <h3 className="text-sm font-medium text-amber-400">Varian Warna</h3>
                     <div className="flex flex-wrap gap-1.5">
                       {WARNA_UMUM.map(w => (
                         <button key={w} type="button" onClick={() => toggleWarna(w)}
@@ -532,14 +531,45 @@ export function ProdukList({ data }: { data: Produk[] }) {
                               }`}>
                               <ImageIcon className="h-3 w-3" />
                               {wd.warna} <span className="text-[10px] text-zinc-600">({wd.photos.length})</span>
-                              {wd.photos.length === 0 && <span className="text-red-500 text-[10px]">!foto</span>}
                             </button>
                           ))}
                         </div>
 
                         {activeWarna && (
                           <div className="border border-zinc-800 rounded-lg p-4 space-y-3 bg-zinc-900/50">
-                            <h4 className="text-sm font-medium text-white">Foto <span className="text-amber-400">{activeWarna.warna}</span></h4>
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-medium text-white">Foto <span className="text-amber-400">{activeWarna.warna}</span></h4>
+                              {warnaData.filter(w => w.warna !== activeWarna.warna && getSizesForColor(w.warna).some(r => r.hargaModal || r.price)).length > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[9px] text-zinc-600 tracking-wider">Salin ukuran dari:</span>
+                                  <select
+                                    onChange={e => {
+                                      const src = e.target.value
+                                      if (!src) return
+                                      const srcRows = getSizesForColor(src)
+                                      if (srcRows.length === 0) return
+                                      setSizeData(prev => {
+                                        const m = new Map(prev)
+                                        const dstRows = m.get(activeWarna.warna) || []
+                                        const merged = dstRows.map(dst => {
+                                          const match = srcRows.find(s => s.size === dst.size)
+                                          return match ? { ...dst, hargaModal: match.hargaModal, price: match.price, hargaDiskon: match.hargaDiskon, barcode: match.barcode, stock: match.stock } : dst
+                                        })
+                                        m.set(activeWarna.warna, merged)
+                                        return m
+                                      })
+                                      toast.success(`Data ukuran disalin dari ${src}`)
+                                    }}
+                                    className="text-[10px] bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-zinc-300 focus:outline-none focus:border-amber-500/50"
+                                  >
+                                    <option value="">— pilih —</option>
+                                    {warnaData.filter(w => w.warna !== activeWarna.warna && getSizesForColor(w.warna).some(r => r.hargaModal || r.price)).map(w => (
+                                      <option key={w.warna} value={w.warna}>{w.warna}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+                            </div>
                             {activeWarna.photos.length > 0 ? (
                               <div className="flex gap-2 flex-wrap">
                                 {activeWarna.photos.map((p, i) => (
@@ -558,8 +588,8 @@ export function ProdukList({ data }: { data: Produk[] }) {
                                 ))}
                               </div>
                             ) : (
-                              <div className="border-2 border-dashed border-red-500/30 rounded-lg p-6 text-center">
-                                <p className="text-xs text-red-400">Wajib upload minimal 1 foto</p>
+                              <div className="border-2 border-dashed border-zinc-700 rounded-lg p-6 text-center">
+                                <p className="text-xs text-zinc-500">Belum ada foto</p>
                               </div>
                             )}
                             <div onDrop={e => handleColorDrop(e, activeWarna.warna)} onDragOver={e => e.preventDefault()}
@@ -588,6 +618,55 @@ export function ProdukList({ data }: { data: Produk[] }) {
                         </button>
                       ))}
                     </div>
+
+                    {/* Harga per Ukuran — global, berlaku untuk semua warna */}
+                    {selectedSizes.length > 0 && warnaData.length > 0 && (
+                      <div className="border border-zinc-800 rounded-lg p-3 space-y-2">
+                        <p className="text-[10px] text-zinc-500 tracking-wider uppercase">Harga per Ukuran — berlaku untuk semua warna</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedSizes.map(size => {
+                            const firstColor = warnaData[0]?.warna
+                            const firstRows = getSizesForColor(firstColor)
+                            const row = firstRows.find(r => r.size === size)
+                            return (
+                              <div key={size} className="flex items-center gap-1.5 p-2 bg-zinc-900/60 border border-zinc-800 rounded-lg">
+                                <span className="text-xs font-semibold text-amber-400 w-6">{size}</span>
+                                <div className="relative w-24">
+                                  <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-zinc-600">M</span>
+                                  <input type="number" value={row?.hargaModal || ""} placeholder="Modal"
+                                    className="w-full h-7 pl-5 pr-1 text-[10px] bg-zinc-800 border border-zinc-700 rounded text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
+                                    onChange={e => {
+                                      const v = e.target.value
+                                      setSizeData(prev => {
+                                        const m = new Map(prev)
+                                        for (const [w, rows] of m) {
+                                          m.set(w, rows.map(r => r.size === size ? { ...r, hargaModal: v } : r))
+                                        }
+                                        return m
+                                      })
+                                    }} />
+                                </div>
+                                <div className="relative w-24">
+                                  <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-zinc-600">J</span>
+                                  <input type="number" value={row?.price || ""} placeholder="Jual"
+                                    className="w-full h-7 pl-5 pr-1 text-[10px] bg-zinc-800 border border-zinc-700 rounded text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/50"
+                                    onChange={e => {
+                                      const v = e.target.value
+                                      setSizeData(prev => {
+                                        const m = new Map(prev)
+                                        for (const [w, rows] of m) {
+                                          m.set(w, rows.map(r => r.size === size ? { ...r, price: v } : r))
+                                        }
+                                        return m
+                                      })
+                                    }} />
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Size tables per color */}
                     {warnaData.length > 0 && selectedSizes.length > 0 && (
@@ -625,8 +704,9 @@ export function ProdukList({ data }: { data: Produk[] }) {
                                         <TableHead className="text-[10px]">Code</TableHead>
                                         <TableHead className="text-[10px]">SKU</TableHead>
                                         <TableHead className="text-[10px]">Barcode</TableHead>
-                                        <TableHead className="text-[10px]">Harga (Rp)</TableHead>
-                                        <TableHead className="text-[10px]">Diskon (Rp)</TableHead>
+                                        <TableHead className="text-[10px]">Modal</TableHead>
+                                        <TableHead className="text-[10px]">Jual</TableHead>
+                                        <TableHead className="text-[10px]">Diskon</TableHead>
                                         <TableHead className="text-[10px]">Stok</TableHead>
                                         <TableHead className="text-[10px]">Status</TableHead>
                                       </TableRow>
@@ -646,9 +726,11 @@ export function ProdukList({ data }: { data: Produk[] }) {
                                               <Input value={r.barcode} onChange={e => updateSizeRow(wd.warna, i, "barcode", e.target.value)}
                                                 className="text-[10px] h-7 w-24 font-mono" placeholder="Opsional" />
                                             </TableCell>
-                                            <TableCell>
-                                              <Input type="number" value={r.price} onChange={e => updateSizeRow(wd.warna, i, "price", e.target.value)}
-                                                className="text-[10px] h-7 w-20" placeholder="0" />
+                                            <TableCell className="text-[10px] text-zinc-400 font-mono">
+                                              {Number(r.hargaModal).toLocaleString() || "—"}
+                                            </TableCell>
+                                            <TableCell className="text-[10px] text-amber-400 font-mono font-semibold">
+                                              {Number(r.price).toLocaleString() || "—"}
                                             </TableCell>
                                             <TableCell>
                                               <Input type="number" value={r.hargaDiskon} onChange={e => updateSizeRow(wd.warna, i, "hargaDiskon", e.target.value)}
