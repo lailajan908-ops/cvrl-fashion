@@ -7,19 +7,17 @@ export async function POST(req: NextRequest) {
     await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
 
     const body = await req.json()
-    const { kode, nama, satuan, warna, kategori, stok, hargaBeli, stokMinimum } = body
+    const { nama, satuan, stok, hargaBeli } = body
 
-    if (!kode || !nama || !warna) {
-      return Response.json({ error: "Kode, nama, dan warna wajib diisi" }, { status: 400 })
+    if (!nama) {
+      return Response.json({ error: "Nama bahan wajib diisi" }, { status: 400 })
     }
 
-    const existing = await prisma.bahan.findUnique({ where: { kode } })
-    if (existing) {
-      return Response.json({ error: "Kode bahan sudah ada" }, { status: 400 })
-    }
+    const count = await prisma.bahan.count()
+    const kode = `BH-${String(count + 1).padStart(3, "0")}`
 
     const bahan = await prisma.bahan.create({
-      data: { kode, nama, satuan, warna, kategori: kategori || "Bahan Baku", stok: stok ?? 0, hargaBeli: hargaBeli ?? 0, stokMinimum: stokMinimum ?? 0 },
+      data: { kode, nama, satuan: satuan || "Meter", warna: "", kategori: "Bahan Baku", stok: stok ?? 0, hargaBeli: hargaBeli ?? 0, stokMinimum: 0 },
     })
 
     return Response.json(bahan)
@@ -33,18 +31,13 @@ export async function PUT(req: NextRequest) {
     await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
 
     const body = await req.json()
-    const { id, kode, nama, satuan, warna, kategori, stok, hargaBeli, stokMinimum } = body
+    const { id, nama, satuan, stok, hargaBeli } = body
 
     if (!id) return Response.json({ error: "ID required" }, { status: 400 })
 
-    const existing = await prisma.bahan.findFirst({ where: { kode, NOT: { id } } })
-    if (existing) {
-      return Response.json({ error: "Kode bahan sudah digunakan" }, { status: 400 })
-    }
-
     const bahan = await prisma.bahan.update({
       where: { id },
-      data: { kode, nama, satuan, warna, kategori: kategori || "Bahan Baku", stok: stok ?? 0, hargaBeli: hargaBeli ?? 0, stokMinimum: stokMinimum ?? 0 },
+      data: { nama, satuan: satuan || "Meter", stok: stok ?? 0, hargaBeli: hargaBeli ?? 0 },
     })
 
     return Response.json(bahan)

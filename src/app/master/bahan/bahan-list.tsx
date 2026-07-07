@@ -17,14 +17,11 @@ type Bahan = {
   kode: string
   nama: string
   satuan: string
-  warna: string
-  kategori: string
   stok: number
   hargaBeli: number
-  stokMinimum: number
 }
 
-const initialForm = { kode: "", nama: "", satuan: "Meter", warna: "", kategori: "Bahan Baku", stok: 0, hargaBeli: 0, stokMinimum: 0 }
+const initialForm = { nama: "", satuan: "Meter", stok: 0, hargaBeli: 0 }
 
 export function BahanList({ data }: { data: Bahan[] }) {
   const router = useRouter()
@@ -38,7 +35,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
   }
 
   function openEdit(item: Bahan) {
-    setForm({ kode: item.kode, nama: item.nama, satuan: item.satuan, warna: item.warna, kategori: item.kategori, stok: item.stok, hargaBeli: item.hargaBeli, stokMinimum: item.stokMinimum })
+    setForm({ nama: item.nama, satuan: item.satuan, stok: item.stok, hargaBeli: item.hargaBeli })
     setEditing(item)
     setOpen(true)
   }
@@ -46,8 +43,8 @@ export function BahanList({ data }: { data: Bahan[] }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    if (!form.kode || !form.nama || !form.warna) {
-      toast.error("Kode, Nama, dan Warna harus diisi")
+    if (!form.nama) {
+      toast.error("Nama bahan harus diisi")
       return
     }
 
@@ -96,10 +93,6 @@ export function BahanList({ data }: { data: Bahan[] }) {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Kode Bahan</Label>
-                  <Input value={form.kode} onChange={(e) => setForm({ ...form, kode: e.target.value })} placeholder="Contoh: KAT-01" />
-                </div>
-                <div className="space-y-2">
                   <Label>Nama Bahan</Label>
                   <Input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama bahan" />
                 </div>
@@ -116,33 +109,12 @@ export function BahanList({ data }: { data: Bahan[] }) {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Kategori</Label>
-                  <select
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
-                    value={form.kategori}
-                    onChange={(e) => setForm({ ...form, kategori: e.target.value })}
-                  >
-                    <option value="Bahan Baku">Bahan Baku</option>
-                    <option value="Aksesoris">Aksesoris</option>
-                  </select>
+                  <Label>Stok</Label>
+                  <Input type="number" step="0.01" value={form.stok} onChange={(e) => setForm({ ...form, stok: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Warna</Label>
-                  <Input value={form.warna} onChange={(e) => setForm({ ...form, warna: e.target.value })} placeholder="Warna" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Stok</Label>
-                    <Input type="number" step="0.01" value={form.stok} onChange={(e) => setForm({ ...form, stok: parseFloat(e.target.value) || 0 })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Harga Beli</Label>
-                    <Input type="number" step="100" value={form.hargaBeli} onChange={(e) => setForm({ ...form, hargaBeli: parseFloat(e.target.value) || 0 })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Stok Min</Label>
-                    <Input type="number" step="0.01" value={form.stokMinimum} onChange={(e) => setForm({ ...form, stokMinimum: parseFloat(e.target.value) || 0 })} />
-                  </div>
+                  <Label>Harga Beli</Label>
+                  <Input type="number" step="100" value={form.hargaBeli} onChange={(e) => setForm({ ...form, hargaBeli: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <Button type="submit" className="w-full">{editing ? "Simpan" : "Tambah"}</Button>
               </form>
@@ -154,33 +126,25 @@ export function BahanList({ data }: { data: Bahan[] }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Kode</TableHead>
-                <TableHead>Nama</TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead>Warna</TableHead>
+                <TableHead>Nama Bahan</TableHead>
                 <TableHead>Satuan</TableHead>
                 <TableHead>Stok</TableHead>
                 <TableHead>Harga Beli</TableHead>
-                <TableHead>Stok Min</TableHead>
                 <TableHead className="w-24">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground">Belum ada data</TableCell>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">Belum ada data</TableCell>
                 </TableRow>
               )}
               {data.map((b) => (
                 <TableRow key={b.id}>
-                  <TableCell className="font-medium">{b.kode}</TableCell>
-                  <TableCell>{b.nama}</TableCell>
-                  <TableCell><span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">{b.kategori}</span></TableCell>
-                  <TableCell>{b.warna}</TableCell>
+                  <TableCell className="font-medium">{b.nama}</TableCell>
                   <TableCell>{b.satuan}</TableCell>
-                  <TableCell className={b.stok <= b.stokMinimum ? "text-red-500 font-bold" : ""}>{b.stok}</TableCell>
+                  <TableCell>{b.stok}</TableCell>
                   <TableCell>Rp {b.hargaBeli.toLocaleString()}</TableCell>
-                  <TableCell>{b.stokMinimum}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button variant="outline" size="icon" onClick={() => openEdit(b)}>
