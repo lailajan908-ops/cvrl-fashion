@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const bahan = await prisma.bahan.create({
-      data: { kode, nama, satuan, warna, kategori: kategori || "Bahan Baku", stok: stok || 0, hargaBeli: hargaBeli || 0, stokMinimum: stokMinimum || 0 },
+      data: { kode, nama, satuan, warna, kategori: kategori || "Bahan Baku", stok: stok ?? 0, hargaBeli: hargaBeli ?? 0, stokMinimum: stokMinimum ?? 0 },
     })
 
     return Response.json(bahan)
@@ -44,7 +44,7 @@ export async function PUT(req: NextRequest) {
 
     const bahan = await prisma.bahan.update({
       where: { id },
-      data: { kode, nama, satuan, warna, kategori: kategori || "Bahan Baku", stok: stok || 0, hargaBeli: hargaBeli || 0, stokMinimum: stokMinimum || 0 },
+      data: { kode, nama, satuan, warna, kategori: kategori || "Bahan Baku", stok: stok ?? 0, hargaBeli: hargaBeli ?? 0, stokMinimum: stokMinimum ?? 0 },
     })
 
     return Response.json(bahan)

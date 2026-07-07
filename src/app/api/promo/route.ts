@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     const errors: string[] = []
     for (const v of variasis) {
-      const hargaJual = 50000 // default price, will come from actual data
+      const hargaJual = v.price || 0
       let hargaPromo = hargaJual
 
       if (jenis === "persen") {

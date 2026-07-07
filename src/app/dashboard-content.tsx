@@ -142,7 +142,7 @@ export function DashboardContent({ session }: { session: any }) {
   const sold = sc.find((s: any) => s.stage === "Sold")?.count || 0
   const returned = sc.find((s: any) => s.stage === "Returned")?.count || 0
   const lowStok = data?.bahanStok?.filter((b: any) => b.stok <= b.stokMinimum) || []
-  const totalOmset = meta.totalRevenue || sold * 85000
+  const totalOmset = meta.totalRevenue ?? sold * 85000
   const sewingStatus = data?.sewingStatus || []
   const topProduksi = (data?.topProduksi || []).slice(0, 4)
   const topProducts = data?.topProducts || []

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       const totalDays = attendances.length
 
       let basePay = 0
-      let totalPieces = attendances.length
+      let totalPieces = 0
 
       if (user.payrollType === "HarianTetap") {
         basePay = user.dailyRate * totalDays
@@ -97,22 +97,22 @@ export async function PUT(req: NextRequest) {
     if (!id) return Response.json({ error: "ID required" }, { status: 400 })
 
     if (action === "pay") {
+      const existing = await prisma.payroll.findUnique({ where: { id } })
+      if (!existing) return Response.json({ error: "Payroll not found" }, { status: 404 })
+
+      const netPay = existing.basePay + (bonus || 0) - (deductions || 0)
       const payroll = await prisma.payroll.update({
         where: { id },
         data: {
           bonus: bonus || 0,
           deductions: deductions || 0,
-          netPay: { increment: 0 },
+          netPay,
           status: "Paid",
           paidAt: new Date(),
         },
       })
 
-      // Recalculate netPay
-      const netPay = payroll.basePay + (bonus || 0) - (deductions || 0)
-      await prisma.payroll.update({ where: { id }, data: { netPay } })
-
-      return Response.json({ ...payroll, netPay })
+      return Response.json(payroll)
     }
 
     return Response.json({ error: "Invalid action" }, { status: 400 })

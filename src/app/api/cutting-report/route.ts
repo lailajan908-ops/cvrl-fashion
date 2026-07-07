@@ -74,8 +74,9 @@ export async function POST(req: NextRequest) {
 
     for (const d of details) {
       const resultQty = d.cuttingCount * d.perPieceMultiplier
+      const finalResultQty = d.resultQtyOverride || resultQty
       totalMaterial += d.amountUsed
-      totalResult += resultQty
+      totalResult += finalResultQty
 
       // Create detail
       await tx.cuttingReportDetail.create({
@@ -104,7 +105,6 @@ export async function POST(req: NextRequest) {
       )
       if (!poItem) continue
 
-      const finalResultQty = d.resultQtyOverride || resultQty
       const baseBarcode = `${po.code}-${poItem.variasi.produk.kode}-${d.size}-${d.warna}`
 
       // Check existing barcodes for this PO to continue sequence

@@ -66,9 +66,10 @@ export async function PATCH(req: NextRequest) {
       })
 
       for (const item of items) {
+        const increment = item.bahan.satuan === "KG" ? item.totalKg : item.totalMeter
         await prisma.bahan.update({
           where: { id: item.bahanId },
-          data: { stok: { increment: item.totalKg + item.totalMeter } },
+          data: { stok: { increment } },
         })
       }
 
