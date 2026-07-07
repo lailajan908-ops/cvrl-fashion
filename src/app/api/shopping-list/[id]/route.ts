@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest) {
     if (!id) return Response.json({ error: "ID required" }, { status: 400 })
 
     const body = await req.json()
-    const { action, buktiUrl } = body
+    const { action, buktiUrl, items: terimaItems } = body
 
     if (!action || !["submit", "approve", "terima", "cancel", "done"].includes(action)) {
       return Response.json({ error: "Action must be submit, approve, terima, cancel, or done" }, { status: 400 })
@@ -44,6 +44,22 @@ export async function PATCH(req: NextRequest) {
       if (list.status !== "Approved") {
         return Response.json({ error: "Hanya list Approved yang bisa diterima" }, { status: 400 })
       }
+
+      // Update item weights & prices
+      if (terimaItems?.length) {
+        for (const ti of terimaItems) {
+          await prisma.shoppingListItem.update({
+            where: { id: ti.id },
+            data: {
+              totalKg: ti.totalKg ?? 0,
+              totalMeter: ti.totalMeter ?? 0,
+              hargaPerKg: ti.hargaPerKg ?? 0,
+              hargaPerMeter: ti.hargaPerMeter ?? 0,
+            },
+          })
+        }
+      }
+
       updateData = {
         status: "Diterima",
         buktiUrl: buktiUrl || null,

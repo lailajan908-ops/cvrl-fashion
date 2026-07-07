@@ -42,6 +42,16 @@ function emptyItem(): ListItem {
   return { bahanId: "", warna: "", rolls: "", totalKg: 0, totalMeter: 0, hargaPerKg: 0, hargaPerMeter: 0 }
 }
 
+function terimaItemFromItem(item: ListItem & { bahan: Bahan }): ListItem & { bahan: Bahan } {
+  return {
+    ...item,
+    totalKg: item.totalKg || 0,
+    totalMeter: item.totalMeter || 0,
+    hargaPerKg: item.hargaPerKg || 0,
+    hargaPerMeter: item.hargaPerMeter || 0,
+  }
+}
+
 const statusColors: Record<string, string> = {
   Draft: "bg-zinc-800 text-zinc-400",
   PendingApproval: "bg-amber-900/30 text-amber-500 border border-amber-800/30",
@@ -68,6 +78,7 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
   const [tab, setTab] = useState<string>("all")
   const [terimaOpen, setTerimaOpen] = useState(false)
   const [terimaList, setTerimaList] = useState<ShoppingList | null>(null)
+  const [terimaItems, setTerimaItems] = useState<(ListItem & { bahan: Bahan })[]>([])
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -117,17 +128,7 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
 
     if (field === "bahanId") {
       const bahan = bahanList.find((b) => b.id === value)
-      if (bahan) {
-        updated[idx].warna = bahan.warna
-        updated[idx].hargaPerKg = bahan.kategori === "Bahan Baku" ? bahan.hargaBeli : 0
-        updated[idx].hargaPerMeter = bahan.kategori === "Aksesoris" ? bahan.hargaBeli : 0
-      }
-    }
-
-    if (field === "rolls") {
-      const nums = value.split(",").map((s: string) => parseFloat(s.trim())).filter((n: number) => !isNaN(n))
-      const total = nums.reduce((sum: number, n: number) => sum + n, 0)
-      updated[idx].totalKg = total
+      if (bahan) updated[idx].warna = bahan.warna
     }
 
     setItems(updated)
@@ -136,9 +137,9 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    const validItems = items.filter((i) => i.bahanId && (i.totalKg > 0 || i.totalMeter > 0))
+    const validItems = items.filter((i) => i.bahanId)
     if (validItems.length === 0) {
-      toast.error("Minimal satu item dengan total > 0")
+      toast.error("Pilih minimal satu bahan")
       return
     }
 
@@ -148,10 +149,6 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
         bahanId: i.bahanId,
         warna: i.warna,
         rolls: i.rolls,
-        totalKg: i.totalKg,
-        totalMeter: i.totalMeter,
-        hargaPerKg: i.hargaPerKg,
-        hargaPerMeter: i.hargaPerMeter,
       })),
     }
 
@@ -214,7 +211,14 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
 
   function openTerima(list: ShoppingList) {
     setTerimaList(list)
+    setTerimaItems(list.items.map(i => terimaItemFromItem(i)))
     setTerimaOpen(true)
+  }
+
+  function updateTerimaItem(idx: number, field: string, value: any) {
+    const updated = [...terimaItems]
+    ;(updated[idx] as any)[field] = value
+    setTerimaItems(updated)
   }
 
   async function handleTerima() {
@@ -242,7 +246,15 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
       buktiUrl = uploadData.url
     }
 
-    await handleAction(terimaList.id, "terima", { buktiUrl })
+    const items = terimaItems.map(i => ({
+      id: i.id,
+      totalKg: i.totalKg,
+      totalMeter: i.totalMeter,
+      hargaPerKg: i.hargaPerKg,
+      hargaPerMeter: i.hargaPerMeter,
+    }))
+
+    await handleAction(terimaList.id, "terima", { buktiUrl, items })
     setTerimaOpen(false)
     setTerimaList(null)
     setUploading(false)
@@ -279,75 +291,44 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {items.map((item, idx) => {
-                    const total = itemTotal(item)
-                    return (
-                      <div key={idx} className="p-3 rounded-lg border border-zinc-800 bg-zinc-900/50 space-y-2">
-                        <div className="flex flex-wrap items-end gap-2">
-                          <div className="flex-1 min-w-[160px] space-y-1">
-                            <Label className="text-[10px]">Jenis Kain / Bahan</Label>
-                            <Select value={item.bahanId} onValueChange={(v) => updateItem(idx, "bahanId", v)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Pilih bahan..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {bahanList.map((b) => (
-                                  <SelectItem key={b.id} value={b.id}>
-                                    {b.kode} - {b.nama} ({b.kategori})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="w-28 space-y-1">
-                            <Label className="text-[10px]">Warna</Label>
-                            <Input value={item.warna} onChange={(e) => updateItem(idx, "warna", e.target.value)} placeholder="Warna" />
-                          </div>
-                          <Button type="button" variant="ghost" size="icon" className="shrink-0 text-red-500" onClick={() => removeItem(idx)} disabled={items.length <= 1}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                  {items.map((item, idx) => (
+                    <div key={idx} className="p-3 rounded-lg border border-zinc-800 bg-zinc-900/50 space-y-2">
+                      <div className="flex flex-wrap items-end gap-2">
+                        <div className="flex-1 min-w-[160px] space-y-1">
+                          <Label className="text-[10px]">Jenis Kain / Bahan</Label>
+                          <Select value={item.bahanId} onValueChange={(v) => updateItem(idx, "bahanId", v)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih bahan..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {bahanList.map((b) => (
+                                <SelectItem key={b.id} value={b.id}>
+                                  {b.kode} - {b.nama} ({b.kategori})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-
-                        <div className="flex flex-wrap items-end gap-2">
-                          <div className="flex-1 min-w-[200px] space-y-1">
-                            <Label className="text-[10px]">Rincian Roll (Kg) — pisahkan dengan koma</Label>
-                            <Input
-                              value={item.rolls}
-                              onChange={(e) => updateItem(idx, "rolls", e.target.value)}
-                              placeholder="25.55, 25.80, 25.80, 25.90"
-                            />
-                          </div>
-                          <div className="w-20 space-y-1">
-                            <Label className="text-[10px]">Total Kg</Label>
-                            <Input type="number" step="0.01" min="0" value={item.totalKg || ""} onChange={(e) => updateItem(idx, "totalKg", parseFloat(e.target.value) || 0)} />
-                          </div>
-                          <div className="w-24 space-y-1">
-                            <Label className="text-[10px]">Harga / Kg</Label>
-                            <Input type="number" step="100" min="0" value={item.hargaPerKg || ""} onChange={(e) => updateItem(idx, "hargaPerKg", parseFloat(e.target.value) || 0)} />
-                          </div>
+                        <div className="w-28 space-y-1">
+                          <Label className="text-[10px]">Warna</Label>
+                          <Input value={item.warna} onChange={(e) => updateItem(idx, "warna", e.target.value)} placeholder="Warna" />
                         </div>
-
-                        <div className="flex flex-wrap items-end gap-2">
-                          <div className="w-24 space-y-1">
-                            <Label className="text-[10px]">Total Meter</Label>
-                            <Input type="number" step="0.01" min="0" value={item.totalMeter || ""} onChange={(e) => updateItem(idx, "totalMeter", parseFloat(e.target.value) || 0)} />
-                          </div>
-                          <div className="w-28 space-y-1">
-                            <Label className="text-[10px]">Harga / Meter</Label>
-                            <Input type="number" step="100" min="0" value={item.hargaPerMeter || ""} onChange={(e) => updateItem(idx, "hargaPerMeter", parseFloat(e.target.value) || 0)} />
-                          </div>
-                          <div className="text-xs text-zinc-400 py-1">
-                            Subtotal: <span className="text-amber-400 font-semibold">Rp {total.toLocaleString()}</span>
-                          </div>
-                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="shrink-0 text-red-500" onClick={() => removeItem(idx)} disabled={items.length <= 1}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    )
-                  })}
-                </div>
-              </div>
 
-              <div className="text-right text-sm text-zinc-400">
-                Total Estimasi: <span className="text-amber-400 font-bold">Rp {listTotal(items).toLocaleString()}</span>
+                      <div className="flex-1 min-w-[200px] space-y-1">
+                        <Label className="text-[10px]">Roll</Label>
+                        <Input
+                          value={item.rolls}
+                          onChange={(e) => updateItem(idx, "rolls", e.target.value)}
+                          placeholder="Contoh: 4 roll / 25.5 kg per roll"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <Button type="submit" className="w-full">{editing ? "Simpan" : "Simpan sebagai Draft"}</Button>
@@ -377,11 +358,58 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
 
       {/* Dialog Terima Barang */}
       <Dialog open={terimaOpen} onOpenChange={setTerimaOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Terima Barang - {terimaList?.code}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bahan</TableHead>
+                    <TableHead>Warna</TableHead>
+                    <TableHead>Roll</TableHead>
+                    <TableHead>Total Kg</TableHead>
+                    <TableHead>Harga/Kg</TableHead>
+                    <TableHead>Total Meter</TableHead>
+                    <TableHead>Harga/Meter</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {terimaItems.map((item, idx) => {
+                    const isKg = item.bahan.satuan === "KG"
+                    return (
+                      <TableRow key={item.id || idx}>
+                        <TableCell className="text-xs">{item.bahan.nama}</TableCell>
+                        <TableCell>{item.warna}</TableCell>
+                        <TableCell className="text-xs text-zinc-400">{item.rolls}</TableCell>
+                        <TableCell>
+                          <Input type="number" step="0.01" min="0" className="h-8 w-24 text-xs"
+                            value={item.totalKg || ""}
+                            onChange={e => updateTerimaItem(idx, "totalKg", parseFloat(e.target.value) || 0)} />
+                        </TableCell>
+                        <TableCell>
+                          <Input type="number" step="100" min="0" className="h-8 w-28 text-xs"
+                            value={item.hargaPerKg || ""}
+                            onChange={e => updateTerimaItem(idx, "hargaPerKg", parseFloat(e.target.value) || 0)} />
+                        </TableCell>
+                        <TableCell>
+                          <Input type="number" step="0.01" min="0" className="h-8 w-24 text-xs"
+                            value={item.totalMeter || ""}
+                            onChange={e => updateTerimaItem(idx, "totalMeter", parseFloat(e.target.value) || 0)} />
+                        </TableCell>
+                        <TableCell>
+                          <Input type="number" step="100" min="0" className="h-8 w-28 text-xs"
+                            value={item.hargaPerMeter || ""}
+                            onChange={e => updateTerimaItem(idx, "hargaPerMeter", parseFloat(e.target.value) || 0)} />
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
             <div className="space-y-2">
               <Label>Foto Surat Jalan (dari supplier/toko)</Label>
               <input type="file" ref={fileRef} accept="image/*" className="w-full text-sm text-zinc-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border file:border-zinc-700 file:text-xs file:bg-zinc-900 file:text-zinc-300 hover:file:bg-zinc-800" />
@@ -480,12 +508,16 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
                     <TableRow>
                       <TableHead>Jenis Kain</TableHead>
                       <TableHead>Warna</TableHead>
-                      <TableHead>Rincian Roll (Kg)</TableHead>
-                      <TableHead>Total Kg</TableHead>
-                      <TableHead>Harga/Kg</TableHead>
-                      <TableHead>Total Meter</TableHead>
-                      <TableHead>Harga/Meter</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead>
+                      <TableHead>Roll</TableHead>
+                      {["Diterima", "Done"].includes(list.status) && (
+                        <>
+                          <TableHead>Total Kg</TableHead>
+                          <TableHead>Harga/Kg</TableHead>
+                          <TableHead>Total Meter</TableHead>
+                          <TableHead>Harga/Meter</TableHead>
+                          <TableHead className="text-right">Subtotal</TableHead>
+                        </>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -494,22 +526,28 @@ export function ListBelanjaClient({ bahanList, initialLists, userRole }: {
                         <TableCell className="font-medium">{item.bahan.nama}</TableCell>
                         <TableCell>{item.warna}</TableCell>
                         <TableCell className="text-xs text-zinc-400 max-w-[200px] truncate">{item.rolls}</TableCell>
-                        <TableCell>{item.totalKg > 0 ? `${item.totalKg} Kg` : "-"}</TableCell>
-                        <TableCell>{item.hargaPerKg > 0 ? `Rp ${item.hargaPerKg.toLocaleString()}` : "-"}</TableCell>
-                        <TableCell>{item.totalMeter > 0 ? `${item.totalMeter} M` : "-"}</TableCell>
-                        <TableCell>{item.hargaPerMeter > 0 ? `Rp ${item.hargaPerMeter.toLocaleString()}` : "-"}</TableCell>
-                        <TableCell className="text-right">Rp {itemTotal(item).toLocaleString()}</TableCell>
+                        {["Diterima", "Done"].includes(list.status) && (
+                          <>
+                            <TableCell>{item.totalKg > 0 ? `${item.totalKg} Kg` : "-"}</TableCell>
+                            <TableCell>{item.hargaPerKg > 0 ? `Rp ${item.hargaPerKg.toLocaleString()}` : "-"}</TableCell>
+                            <TableCell>{item.totalMeter > 0 ? `${item.totalMeter} M` : "-"}</TableCell>
+                            <TableCell>{item.hargaPerMeter > 0 ? `Rp ${item.hargaPerMeter.toLocaleString()}` : "-"}</TableCell>
+                            <TableCell className="text-right">Rp {itemTotal(item).toLocaleString()}</TableCell>
+                          </>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
 
-              <div className="flex justify-end mt-3 pt-3 border-t border-zinc-800/40">
-                <p className="text-sm">
-                  Total: <span className="text-amber-400 font-bold">Rp {listTotal(list.items).toLocaleString()}</span>
-                </p>
-              </div>
+              {["Diterima", "Done"].includes(list.status) && (
+                <div className="flex justify-end mt-3 pt-3 border-t border-zinc-800/40">
+                  <p className="text-sm">
+                    Total: <span className="text-amber-400 font-bold">Rp {listTotal(list.items).toLocaleString()}</span>
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
