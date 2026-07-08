@@ -135,10 +135,34 @@ export function BahanList({ data }: { data: Bahan[] }) {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Variasi Warna</Label>
+                  <Label>Variasi Warna (Multi-Select)</Label>
+                  <div className="grid grid-cols-4 gap-1.5 p-2 rounded-lg border border-zinc-800 bg-zinc-900/50">
+                    {["HITAM","PUTIH","NAVY","MAROON","ABU-ABU","CREAM","COKLAT","HIJAU","MERAH","KUNING","PINK","UNGU","BIRU","ORANGE","SILVER","EMAS","MILO","ARMY","BURGUNDY","TOSCA"].map((w) => {
+                      const selected = form.warnaList.includes(w)
+                      return (
+                        <button
+                          key={w}
+                          type="button"
+                          onClick={() => setForm((prev) => ({
+                            ...prev,
+                            warnaList: prev.warnaList.includes(w)
+                              ? prev.warnaList.filter((c) => c !== w)
+                              : [...prev.warnaList, w],
+                          }))}
+                          className={`text-[10px] px-2 py-1 rounded border transition-all ${
+                            selected
+                              ? "bg-amber-500/20 border-amber-700 text-amber-400"
+                              : "border-zinc-800 text-zinc-500 hover:border-zinc-600"
+                          }`}
+                        >
+                          {w}
+                        </button>
+                      )
+                    })}
+                  </div>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Ketik warna lalu Enter"
+                      placeholder="Ketik warna kustom..."
                       value={warnaInput}
                       onChange={(e) => setWarnaInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -159,7 +183,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
                       }
                       setWarnaInput("")
                     }}>
-                      <Plus className="h-3 w-3" />
+                      <Plus className="h-3 w-3" /> Tambah
                     </Button>
                   </div>
                   {form.warnaList.length > 0 && (
@@ -167,9 +191,9 @@ export function BahanList({ data }: { data: Bahan[] }) {
                       {form.warnaList.map((w, i) => (
                         <span key={i} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">
                           {w}
-                          <button type="button" onClick={() => {
-                            setForm({ ...form, warnaList: form.warnaList.filter((_, j) => j !== i) })
-                          }} className="hover:text-amber-200">
+                          <button type="button" onClick={() => setForm((prev) => ({
+                            ...prev, warnaList: prev.warnaList.filter((_, j) => j !== i)
+                          }))} className="hover:text-amber-200">
                             <X className="h-2.5 w-2.5" />
                           </button>
                         </span>
