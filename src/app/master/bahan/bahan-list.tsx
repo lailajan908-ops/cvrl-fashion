@@ -23,7 +23,7 @@ type Bahan = {
   hargaBeli: number
 }
 
-const initialForm = { nama: "", satuan: "Meter", kategori: "Kain", stok: 0, hargaBeli: 0, warnaList: [] as string[] }
+const initialForm = { nama: "", satuan: "Meter", kategori: "Kain", warnaList: [] as string[] }
 
 export function BahanList({ data }: { data: Bahan[] }) {
   const router = useRouter()
@@ -45,8 +45,6 @@ export function BahanList({ data }: { data: Bahan[] }) {
       nama: item.nama,
       satuan: item.satuan,
       kategori: item.kategori,
-      stok: item.stok,
-      hargaBeli: item.hargaBeli,
       warnaList: parsedWarna,
     })
     setEditing(item)
@@ -201,16 +199,10 @@ export function BahanList({ data }: { data: Bahan[] }) {
                     </div>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Stok Awal</Label>
-                    <Input type="number" step="0.01" value={form.stok} onChange={(e) => setForm({ ...form, stok: parseFloat(e.target.value) || 0 })} />
+                  <div className="rounded-lg border border-dashed border-zinc-700 bg-zinc-900/30 p-3 text-center">
+                    <p className="text-[11px] text-zinc-500">Stok & Harga Beli dikunci di angka 0</p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5">Akan terisi otomatis saat Menerima Barang (form Surat Jalan)</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Harga Beli</Label>
-                    <Input type="number" step="100" value={form.hargaBeli} onChange={(e) => setForm({ ...form, hargaBeli: parseFloat(e.target.value) || 0 })} />
-                  </div>
-                </div>
                 <Button type="submit" className="w-full">{editing ? "Simpan" : "Tambah"}</Button>
               </form>
             </DialogContent>

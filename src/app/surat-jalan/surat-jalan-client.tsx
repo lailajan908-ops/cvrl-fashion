@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,10 +42,6 @@ const statusColors: Record<string, string> = {
   Cancelled: "bg-red-900/30 text-red-500 border border-red-800/30",
 }
 
-function emptyItem(): OrderItem {
-  return { bahanId: "", warna: "", rollOrdered: 0, weights: [], totalWeight: 0, price: 0 }
-}
-
 export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
   bahanList: Bahan[]
   initialOrders: PurchaseOrder[]
@@ -56,79 +52,76 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
   const [editing, setEditing] = useState<PurchaseOrder | null>(null)
   const [supplier, setSupplier] = useState("")
   const [notes, setNotes] = useState("")
-  const [items, setItems] = useState<OrderItem[]>([emptyItem()])
+  const [items, setItems] = useState<{ bahanId: string; warna: string; rollOrdered: number }[]>([])
   const [tab, setTab] = useState("all")
   const [terimaOpen, setTerimaOpen] = useState(false)
   const [terimaOrder, setTerimaOrder] = useState<PurchaseOrder | null>(null)
   const [fakturNo, setFakturNo] = useState("")
   const [hargaBeli, setHargaBeli] = useState(0)
+  // Add-item state
+  const [addBahanId, setAddBahanId] = useState("")
+  const [addColors, setAddColors] = useState<string[]>([])
+  const [colorRolls, setColorRolls] = useState<Record<string, number>>({})
 
   const statuses = ["all", "Draft", "Ordered", "Received", "Done", "Cancelled"]
   const filtered = tab === "all" ? initialOrders : initialOrders.filter((o) => o.status === tab)
+  const selectedBahan = bahanList.find((b) => b.id === addBahanId)
+  let availableWarna: string[] = []
+  try { if (selectedBahan) availableWarna = JSON.parse(selectedBahan.warnaList || "[]") } catch {}
 
   function resetForm() {
-    setSupplier("")
-    setNotes("")
-    setItems([emptyItem()])
-    setEditing(null)
+    setSupplier(""); setNotes(""); setItems([]); setEditing(null)
+    setAddBahanId(""); setAddColors([]); setColorRolls({})
   }
 
   function openEdit(order: PurchaseOrder) {
     setSupplier(order.supplier)
     setNotes(order.notes || "")
-    setItems(order.items.map((i) => ({
-      bahanId: i.bahanId,
-      warna: i.warna,
-      rollOrdered: i.rollOrdered,
-      weights: [],
-      totalWeight: 0,
-      price: 0,
-    })))
+    setItems(order.items.map((i) => ({ bahanId: i.bahanId, warna: i.warna, rollOrdered: i.rollOrdered })))
     setEditing(order)
     setOpen(true)
   }
 
-  function addItem() { setItems([...items, emptyItem()]) }
+  function toggleAddColor(w: string) {
+    setAddColors((prev) =>
+      prev.includes(w) ? prev.filter((c) => c !== w) : [...prev, w]
+    )
+  }
+
+  function addItemsFromSelection() {
+    if (!addBahanId) { toast.error("Pilih bahan"); return }
+    if (addColors.length === 0) { toast.error("Pilih minimal satu warna"); return }
+    const newItems: { bahanId: string; warna: string; rollOrdered: number }[] = []
+    for (const warna of addColors) {
+      const roll = colorRolls[warna] || 0
+      if (roll <= 0) { toast.error(`Isi jumlah roll untuk ${warna}`); return }
+      newItems.push({ bahanId: addBahanId, warna, rollOrdered: roll })
+    }
+    setItems([...items, ...newItems])
+    setAddBahanId(""); setAddColors([]); setColorRolls({})
+  }
 
   function removeItem(idx: number) {
-    if (items.length <= 1) return
     setItems(items.filter((_, i) => i !== idx))
   }
 
-  function updateItem(idx: number, field: string, value: any) {
-    const updated = [...items]
-    ;(updated[idx] as any)[field] = value
-    if (field === "bahanId") {
-      const bahan = bahanList.find((b) => b.id === value)
-      if (bahan) {
-        let warnaArr: string[] = []
-        try { warnaArr = JSON.parse(bahan.warnaList || "[]") } catch {}
-        updated[idx].warna = warnaArr[0] || ""
-      }
-    }
-    setItems(updated)
+  function getBahan(bahanId: string) {
+    return bahanList.find((b) => b.id === bahanId)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!supplier) { toast.error("Nama supplier/toko wajib diisi"); return }
-    const validItems = items.filter((i) => i.bahanId)
-    if (validItems.length === 0) { toast.error("Pilih minimal satu bahan"); return }
+    if (items.length === 0) { toast.error("Belum ada item order"); return }
 
-    const body = {
-      supplier,
-      notes: notes || null,
-      items: validItems.map((i) => ({ bahanId: i.bahanId, warna: i.warna, rollOrdered: i.rollOrdered })),
-    }
+    const body = { supplier, notes: notes || null, items }
 
     const res = await fetch("/api/purchase-order", {
       method: editing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editing ? { ...body, id: editing.id } : body),
     })
-
     if (!res.ok) { const err = await res.json(); toast.error(err.error || "Gagal menyimpan"); return }
-
     toast.success(editing ? "Order diperbarui" : "Surat Jalan Order dibuat")
     resetForm(); setOpen(false); router.refresh()
   }
@@ -140,7 +133,6 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
       done: "Tandai selesai? Stok bahan akan otomatis bertambah.",
     }
     if (confirmMsg[action] && !confirm(confirmMsg[action])) return
-
     const res = await fetch(`/api/purchase-order/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -151,6 +143,8 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
   }
 
   // Terima dialog
+  const [terimaItems, setTerimaItems] = useState<(OrderItem & { bahan: Bahan })[]>([])
+
   function openTerima(order: PurchaseOrder) {
     setTerimaOrder(order)
     setTerimaItems(order.items.map((i) => ({
@@ -158,13 +152,12 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
       weights: i.weights?.length ? i.weights : Array.from({ length: i.rollOrdered }, (_, ri) => ({ roll: ri + 1, weight: 0 })),
       totalWeight: i.totalWeight || 0,
       price: i.price || 0,
+      bahan: i.bahan,
     })))
     setFakturNo(order.fakturNo || "")
     setHargaBeli(order.hargaBeli || 0)
     setTerimaOpen(true)
   }
-
-  const [terimaItems, setTerimaItems] = useState<(OrderItem & { bahan: Bahan })[]>([])
 
   function updateTerimaWeight(itemIdx: number, rollIdx: number, value: number) {
     const updated = [...terimaItems]
@@ -243,102 +236,133 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
           <DialogTrigger render={<Button><Plus className="mr-2 h-4 w-4" /> Buat Order Baru</Button>} />
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editing ? "Edit Surat Jalan Order" : "Buat Surat Jalan Order Baru"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Pilih Supplier / Toko</Label>
-                <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="Nama supplier atau toko" />
+                <Label className="text-sm">Pilih Supplier / Toko</Label>
+                <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="Nama supplier atau toko" className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label>Catatan</Label>
+                <Label className="text-sm">Catatan</Label>
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Catatan opsional..." />
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Rincian Order Per Bahan & Warna</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                    <Plus className="h-3 w-3 mr-1" /> Tambah Item
-                  </Button>
+
+              {/* Multi-color Item Adder */}
+              <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 space-y-3">
+                <p className="text-sm font-medium">Tambah Item Order</p>
+                <div className="space-y-2">
+                  <Label className="text-[11px] text-zinc-400">Pilih Bahan Baku</Label>
+                  <Select value={addBahanId} onValueChange={(v) => { setAddBahanId(v || ""); setAddColors([]); setColorRolls({}) }}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Pilih bahan..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bahanList.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.kode} - {b.nama} ({b.kategori})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="space-y-3">
-                  {items.map((item, idx) => {
-                    const bahan = bahanList.find((b) => b.id === item.bahanId)
-                    let warnaArr: string[] = []
-                    try { if (bahan) warnaArr = JSON.parse(bahan.warnaList || "[]") } catch {}
-                    return (
-                      <div key={idx} className="p-3 rounded-lg border border-zinc-800 bg-zinc-900/50 space-y-2">
-                        <div className="flex flex-wrap items-end gap-2">
-                          <div className="flex-1 min-w-[180px] space-y-1">
-                            <Label className="text-[10px]">Pilih Bahan</Label>
-                            <Select value={item.bahanId} onValueChange={(v) => updateItem(idx, "bahanId", v)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Pilih bahan..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {bahanList.map((b) => (
-                                  <SelectItem key={b.id} value={b.id}>
-                                    {b.kode} - {b.nama} ({b.kategori})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <Button type="button" variant="ghost" size="icon" className="shrink-0 text-red-500" onClick={() => removeItem(idx)} disabled={items.length <= 1}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {bahan && warnaArr.length > 0 && (
-                          <div className="space-y-2">
-                            <Label className="text-[10px]">Jumlah Roll Per Warna</Label>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {warnaArr.map((w) => {
-                                const isSelected = item.warna === w
-                                return (
-                                  <div
-                                    key={w}
-                                    onClick={() => updateItem(idx, "warna", w)}
-                                    className={`p-2 rounded border cursor-pointer transition-all ${
-                                      isSelected ? "border-amber-700 bg-amber-500/10" : "border-zinc-800 hover:border-zinc-600"
-                                    }`}
-                                  >
-                                    <p className="text-xs font-medium">{w}</p>
-                                    {isSelected && (
-                                      <Input
-                                        type="number" min="0"
-                                        className="h-7 text-xs mt-1"
-                                        value={item.rollOrdered || ""}
-                                        placeholder="Jml roll"
-                                        onClick={(e) => e.stopPropagation()}
-                                        onChange={(e) => updateItem(idx, "rollOrdered", parseInt(e.target.value) || 0)}
-                                      />
-                                    )}
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )}
-                        {bahan && warnaArr.length === 0 && (
-                          <div className="flex gap-2 items-end">
-                            <div className="space-y-1 flex-1">
-                              <Label className="text-[10px]">Warna</Label>
-                              <Input value={item.warna} onChange={(e) => updateItem(idx, "warna", e.target.value)} placeholder="Nama warna" />
-                            </div>
-                            <div className="w-24 space-y-1">
-                              <Label className="text-[10px]">Jumlah Roll</Label>
-                              <Input type="number" min="0" value={item.rollOrdered || ""} onChange={(e) => updateItem(idx, "rollOrdered", parseInt(e.target.value) || 0)} />
-                            </div>
-                          </div>
-                        )}
+
+                {selectedBahan && availableWarna.length > 0 && (
+                  <>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] text-zinc-400">Pilih Warna (centang yang dipesan)</Label>
+                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5">
+                        {availableWarna.map((w) => {
+                          const sel = addColors.includes(w)
+                          return (
+                            <button
+                              key={w}
+                              type="button"
+                              onClick={() => toggleAddColor(w)}
+                              className={`text-[11px] px-2 py-1.5 rounded border transition-all ${
+                                sel
+                                  ? "bg-amber-500/20 border-amber-700 text-amber-400"
+                                  : "border-zinc-800 text-zinc-500 hover:border-zinc-600"
+                              }`}
+                            >
+                              {w}
+                            </button>
+                          )
+                        })}
                       </div>
-                    )
-                  })}
-                </div>
+                    </div>
+
+                    {addColors.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-[11px] text-zinc-400">Jumlah Roll Per Warna</Label>
+                        {addColors.map((w) => (
+                          <div key={w} className="flex items-center gap-3 p-2 rounded border border-zinc-800 bg-zinc-900/80">
+                            <span className="w-20 text-xs font-medium">{w}</span>
+                            <Input
+                              type="number" min="1"
+                              className="h-8 w-24 text-xs"
+                              value={colorRolls[w] || ""}
+                              placeholder="Jumlah roll"
+                              onChange={(e) => setColorRolls({ ...colorRolls, [w]: parseInt(e.target.value) || 0 })}
+                            />
+                            <span className="text-[10px] text-zinc-500">Roll</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <Button type="button" variant="outline" size="sm" onClick={addItemsFromSelection}>
+                      <Plus className="h-3 w-3 mr-1" /> Tambah ke Order
+                    </Button>
+                  </>
+                )}
+
+                {selectedBahan && availableWarna.length === 0 && (
+                  <p className="text-xs text-zinc-500">Bahan ini belum memiliki daftar warna. Tambahkan warna di Master Bahan terlebih dahulu.</p>
+                )}
               </div>
-              <Button type="submit" className="w-full">{editing ? "Simpan" : "Simpan sebagai Draft"}</Button>
+
+              {/* Items List */}
+              {items.length > 0 && (
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium">Rincian Order ({items.length} item)</Label>
+                  <div className="overflow-x-auto rounded-lg border border-zinc-800">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Bahan</TableHead>
+                          <TableHead>Warna</TableHead>
+                          <TableHead className="text-right">Roll</TableHead>
+                          <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {items.map((item, idx) => {
+                          const b = getBahan(item.bahanId)
+                          return (
+                            <TableRow key={idx}>
+                              <TableCell className="font-medium text-xs">{b?.nama || "-"}</TableCell>
+                              <TableCell>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">{item.warna}</span>
+                              </TableCell>
+                              <TableCell className="text-right text-xs">{item.rollOrdered} Roll</TableCell>
+                              <TableCell>
+                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeItem(idx)}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full h-10">{editing ? "Simpan" : "Simpan sebagai Draft"}</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -429,7 +453,7 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
                 <span className="ml-4">Dibuat oleh: <span className="text-zinc-300">{order.createdBy.name || "Unknown"}</span></span>
                 {order.notes && <p className="text-zinc-600 mt-1">Catatan: {order.notes}</p>}
                 {order.fakturNo && <p className="text-zinc-600 mt-1">No. Faktur: {order.fakturNo}</p>}
-                {order.hargaBeli && order.hargaBeli > 0 && <p className="text-zinc-600">Harga Beli: Rp {order.hargaBeli.toLocaleString()} / {order.items[0]?.bahan.satuan || "satuan"}</p>}
+                {order.hargaBeli && order.hargaBeli > 0 && <p className="text-zinc-600">Harga Beli: Rp {order.hargaBeli.toLocaleString()} / {order.items[0]?.bahan?.satuan || "satuan"}</p>}
               </div>
 
               <div className="overflow-x-auto">
@@ -438,7 +462,7 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
                     <TableRow>
                       <TableHead>Bahan</TableHead>
                       <TableHead>Warna</TableHead>
-                      <TableHead>Roll Dipesan</TableHead>
+                      <TableHead>Roll</TableHead>
                       {["Received", "Done"].includes(order.status) && (
                         <>
                           <TableHead>Total Berat</TableHead>
@@ -450,13 +474,13 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
                   <TableBody>
                     {order.items.map((item, idx) => (
                       <TableRow key={item.id || idx}>
-                        <TableCell className="font-medium">{item.bahan.nama}</TableCell>
-                        <TableCell>{item.warna}</TableCell>
-                        <TableCell>{item.rollOrdered} Roll</TableCell>
+                        <TableCell className="font-medium text-xs">{item.bahan.nama}</TableCell>
+                        <TableCell><span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">{item.warna}</span></TableCell>
+                        <TableCell className="text-xs">{item.rollOrdered} Roll</TableCell>
                         {["Received", "Done"].includes(order.status) && (
                           <>
-                            <TableCell>{item.totalWeight > 0 ? `${item.totalWeight} ${item.bahan.satuan}` : "-"}</TableCell>
-                            <TableCell>{item.price > 0 ? `Rp ${item.price.toLocaleString()}` : "-"}</TableCell>
+                            <TableCell className="text-xs">{item.totalWeight > 0 ? `${item.totalWeight.toFixed(2)} ${item.bahan.satuan}` : "-"}</TableCell>
+                            <TableCell className="text-xs">{item.price > 0 ? `Rp ${item.price.toLocaleString()}` : "-"}</TableCell>
                           </>
                         )}
                       </TableRow>
@@ -481,80 +505,77 @@ export function SuratJalanClient({ bahanList, initialOrders, userRole }: {
       <Dialog open={terimaOpen} onOpenChange={setTerimaOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Terima Barang - {terimaOrder?.code}</DialogTitle>
+            <DialogTitle>Terima Barang — {terimaOrder?.code}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>No. Faktur / Nota Supplier</Label>
-                <Input value={fakturNo} onChange={(e) => setFakturNo(e.target.value)} placeholder="Masukkan no faktur" />
+                <Label className="text-sm">No. Faktur / Nota Supplier</Label>
+                <Input value={fakturNo} onChange={(e) => setFakturNo(e.target.value)} placeholder="Masukkan no faktur" className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label>Harga Beli (Per {terimaOrder?.items[0]?.bahan?.satuan || "Satuan"})</Label>
+                <Label className="text-sm">Harga Beli (Per {terimaOrder?.items[0]?.bahan?.satuan || "Satuan"})</Label>
                 <Input type="number" step="100" min="0" value={hargaBeli || ""}
                   onChange={(e) => {
                     const v = parseFloat(e.target.value) || 0
                     setHargaBeli(v)
-                    const updated = [...terimaItems]
-                    updated.forEach((item) => { item.price = item.totalWeight * v })
-                    setTerimaItems(updated)
+                    setTerimaItems((prev) => prev.map((item) => ({ ...item, price: item.totalWeight * v })))
                   }}
-                  placeholder="Rp" />
+                  placeholder="Rp" className="h-10" />
               </div>
             </div>
 
             <div className="space-y-4">
               {terimaItems.map((item, itemIdx) => {
-                const bahan = bahanList.find((b) => b.id === item.bahanId)
-                const satuan = bahan?.satuan || "Kg"
+                const satuan = item.bahan?.satuan || "Kg"
                 return (
-                  <div key={item.id || itemIdx} className="p-3 rounded-lg border border-zinc-800 bg-zinc-900/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium">
-                        <span className="text-zinc-400">{item.warna}</span> — Dipesan: {item.rollOrdered} Roll
-                      </p>
-                      <p className="text-xs text-amber-400">
-                        Total {satuan}: {item.totalWeight.toFixed(2)}
-                      </p>
+                  <div key={item.id || itemIdx} className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-400">{item.bahan?.nama}</span>
+                        <span className="text-xs font-medium text-amber-400">{item.warna}</span>
+                      </div>
+                      <p className="text-xs text-zinc-500">Dipesan: {item.rollOrdered} Roll</p>
                     </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                       {item.weights.map((w, rollIdx) => (
                         <div key={rollIdx} className="space-y-1">
-                          <Label className="text-[9px] text-zinc-500">Roll {rollIdx + 1}</Label>
+                          <Label className="text-[10px] text-zinc-500">Roll {rollIdx + 1}</Label>
                           <Input
                             type="number" step="0.01" min="0"
-                            className="h-8 text-xs"
+                            className="h-9 text-sm"
                             value={w.weight || ""}
-                            placeholder={`${satuan}`}
+                            placeholder={satuan}
                             onChange={(e) => updateTerimaWeight(itemIdx, rollIdx, parseFloat(e.target.value) || 0)}
                           />
                         </div>
                       ))}
                     </div>
-                    <div className="mt-2 flex justify-between text-[10px] text-zinc-600">
-                      <span>Subtotal: Rp {(item.price || 0).toLocaleString()}</span>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-zinc-400">Total {satuan}: <strong className="text-amber-400">{item.totalWeight.toFixed(2)}</strong></span>
+                      <span className="text-zinc-400">Subtotal: <strong>Rp {(item.price || 0).toLocaleString()}</strong></span>
                     </div>
                   </div>
                 )
               })}
             </div>
 
-            <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800">
+            <div className="p-4 rounded-lg bg-zinc-900/80 border border-zinc-800 space-y-1">
               <div className="flex justify-between text-sm">
-                <span>Total Semua Stok Masuk:</span>
+                <span className="text-zinc-300">Total Semua Stok Masuk:</span>
                 <span className="text-amber-400 font-bold">
                   {terimaItems.reduce((s, i) => s + i.totalWeight, 0).toFixed(2)} {terimaOrder?.items[0]?.bahan?.satuan || "Kg"}
                 </span>
               </div>
-              <div className="flex justify-between text-sm mt-1">
-                <span>Total Jumlah Harga Nota:</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-300">Total Jumlah Harga Nota:</span>
                 <span className="text-amber-400 font-bold">
                   Rp {terimaItems.reduce((s, i) => s + (i.price || 0), 0).toLocaleString()}
                 </span>
               </div>
             </div>
 
-            <Button onClick={handleTerima} className="w-full">
+            <Button onClick={handleTerima} className="w-full h-10">
               <CheckCircle className="h-4 w-4 mr-1" /> Simpan & Masuk Stok
             </Button>
           </div>
