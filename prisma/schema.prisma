@@ -43,24 +43,82 @@ model User {
   shoppingLists        ShoppingList[]
   approvedShoppingLists ShoppingList[] @relation("ShoppingListApprovedBy")
   diterimaShoppingLists ShoppingList[] @relation("ShoppingListDiterimaBy")
+  purchaseOrders        PurchaseOrder[]
+  materialUsages        MaterialUsage[]
 }
 
 model Bahan {
   id          String   @id @default(cuid())
   kode        String   @unique
   nama        String
-  satuan      String
-  warna       String
+  satuan      String   // Kilo (Kg), Meter (M), Pcs
+  warna       String   // Primary/default color (backward compat)
+  warnaList   String   @default("[]") // JSON array: ["HITAM","PUTIH","NAVY"]
   stok        Float    @default(0)
   hargaBeli   Float    @default(0)
   stokMinimum Float    @default(0)
-  kategori    String   @default("Bahan Baku")
+  kategori    String   @default("Kain") // Kain / Aksesoris
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  poBahanEstimasis POBahanEstimasi[]
-  cuttingDetails   CuttingReportDetail[]
+  poBahanEstimasis  POBahanEstimasi[]
+  cuttingDetails    CuttingReportDetail[]
   shoppingListItems ShoppingListItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  materialUsages     MaterialUsage[]
+}
+
+model PurchaseOrder {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  supplier    String
+  status      String   @default("Draft") // Draft, Ordered, Received, Done
+  notes       String?
+  fakturNo    String?  // No. Faktur / Nota Supplier (filled at receiving)
+  hargaBeli   Float?   // Harga beli per satuan (filled at receiving)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items PurchaseOrderItem[]
+
+  @@index([code])
+  @@index([status])
+  @@index([createdById])
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  bahanId         String
+  bahan           Bahan         @relation(fields: [bahanId], references: [id])
+  warna           String        // color name
+  rollOrdered     Int           @default(0) // number of rolls ordered
+  weightsJson     String        @default("[]") // JSON: [{"roll":1,"weight":25.5},...]
+  totalWeight     Float         @default(0) // sum of all roll weights
+  price           Float         @default(0) // totalWeight * hargaBeli
+  createdAt       DateTime      @default(now())
+
+  @@index([purchaseOrderId])
+  @@index([bahanId])
+}
+
+model MaterialUsage {
+  id          String   @id @default(cuid())
+  modelName   String   // Nama Model Baju / Artikel
+  bahanId     String
+  bahan       Bahan    @relation(fields: [bahanId], references: [id])
+  warna       String
+  rollCount   Int      @default(0)
+  totalWeight Float    @default(0)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([bahanId])
+  @@index([createdAt])
 }
 
 model ShoppingList {

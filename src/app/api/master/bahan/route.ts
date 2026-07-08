@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
 
     const body = await req.json()
-    const { nama, kategori, satuan, stok, hargaBeli } = body
+    const { nama, kategori, satuan, stok, hargaBeli, warnaList } = body
 
     if (!nama) {
       return Response.json({ error: "Nama bahan wajib diisi" }, { status: 400 })
@@ -16,8 +16,18 @@ export async function POST(req: NextRequest) {
     const count = await prisma.bahan.count()
     const kode = `BH-${String(count + 1).padStart(3, "0")}`
 
+    const warnaArr: string[] = warnaList || []
     const bahan = await prisma.bahan.create({
-      data: { kode, nama, satuan: satuan || "Meter", warna: "", kategori: kategori || "Bahan Baku", stok: stok ?? 0, hargaBeli: hargaBeli ?? 0, stokMinimum: 0 },
+      data: {
+        kode, nama,
+        satuan: satuan || "Meter",
+        warna: warnaArr[0] || "",
+        warnaList: JSON.stringify(warnaArr),
+        kategori: kategori || "Kain",
+        stok: stok ?? 0,
+        hargaBeli: hargaBeli ?? 0,
+        stokMinimum: 0,
+      },
     })
 
     return Response.json(bahan)
@@ -31,13 +41,22 @@ export async function PUT(req: NextRequest) {
     await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
 
     const body = await req.json()
-    const { id, nama, kategori, satuan, stok, hargaBeli } = body
+    const { id, nama, kategori, satuan, stok, hargaBeli, warnaList } = body
 
     if (!id) return Response.json({ error: "ID required" }, { status: 400 })
 
+    const warnaArr: string[] = warnaList || []
     const bahan = await prisma.bahan.update({
       where: { id },
-      data: { nama, kategori: kategori || "Bahan Baku", satuan: satuan || "Meter", stok: stok ?? 0, hargaBeli: hargaBeli ?? 0 },
+      data: {
+        nama,
+        kategori: kategori || "Kain",
+        satuan: satuan || "Meter",
+        stok: stok ?? 0,
+        hargaBeli: hargaBeli ?? 0,
+        warna: warnaArr[0] || "",
+        warnaList: JSON.stringify(warnaArr),
+      },
     })
 
     return Response.json(bahan)

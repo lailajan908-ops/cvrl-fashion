@@ -12,7 +12,7 @@ import {
   LogOut, User, Wrench, DollarSign, FileSpreadsheet,
   Gauge, ShieldCheck, Menu, LayoutDashboard,
   Search, ChevronDown, ChevronRight, Sparkles, Factory,
-  BadgeCheck, Wallet, BarChart3, type LucideIcon,
+  BadgeCheck, Wallet, BarChart3, FileText, type LucideIcon,
 } from "lucide-react"
 
 interface NavItem {
@@ -47,6 +47,7 @@ const navSections: NavSection[] = [
       { href: "/po-produksi", label: "Produksi", icon: ClipboardList, roles: ["Owner", "ManagerProduksi"] },
       { href: "/sewing", label: "Penjahit", icon: Users, roles: ["Owner", "ManagerProduksi", "AdminQC"] },
       { href: "/potong-bahan", label: "Potong Bahan", icon: Scissors, roles: ["Owner", "ManagerProduksi", "AdminGudang"] },
+      { href: "/pemakaian-bahan", label: "Pemakaian Bahan", icon: ClipboardList, roles: ["Owner", "ManagerProduksi", "AdminGudang"] },
       { href: "/scan", label: "Scan Barcode", icon: Scan, roles: ["Owner", "ManagerProduksi", "AdminGudang", "AdminQC"] },
     ],
   },
@@ -67,6 +68,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/master/bahan", label: "Master Bahan", icon: Package, roles: ["Owner", "ManagerProduksi", "AdminGudang"] },
       { href: "/master/produk", label: "Master Produk", icon: Shirt, roles: ["Owner", "ManagerProduksi", "AdminGudang"] },
+      { href: "/surat-jalan", label: "Surat Jalan", icon: FileText, roles: ["Owner", "ManagerProduksi", "AdminGudang"] },
       { href: "/list-belanja", label: "List Belanja", icon: ShoppingCart, roles: ["Owner", "ManagerProduksi", "AdminGudang"] },
       { href: "/inventory", label: "Inventory", icon: Boxes, roles: ["Owner", "AdminGudang", "AdminPenjualan"] },
       { href: "/packing", label: "Packing", icon: Package, roles: ["Owner", "AdminGudang", "ManagerProduksi"] },
