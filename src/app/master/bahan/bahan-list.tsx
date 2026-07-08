@@ -12,12 +12,6 @@ import { Plus, Pencil, X } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
-const WARNA_OPTIONS = [
-  "HITAM", "PUTIH", "NAVY", "MAROON", "ABU-ABU", "CREAM", "COKLAT",
-  "HIJAU", "MERAH", "KUNING", "PINK", "UNGU", "BIRU", "ORANGE",
-  "SILVER", "EMAS", "MILO", "ARMY", "BURGUNDY", "TOSCA",
-]
-
 type Bahan = {
   id: string
   kode: string
@@ -36,9 +30,11 @@ export function BahanList({ data }: { data: Bahan[] }) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Bahan | null>(null)
   const [form, setForm] = useState(initialForm)
+  const [warnaInput, setWarnaInput] = useState("")
 
   function resetForm() {
     setForm(initialForm)
+    setWarnaInput("")
     setEditing(null)
   }
 
@@ -55,15 +51,6 @@ export function BahanList({ data }: { data: Bahan[] }) {
     })
     setEditing(item)
     setOpen(true)
-  }
-
-  function toggleWarna(w: string) {
-    setForm((prev) => ({
-      ...prev,
-      warnaList: prev.warnaList.includes(w)
-        ? prev.warnaList.filter((c) => c !== w)
-        : [...prev.warnaList, w],
-    }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -148,32 +135,41 @@ export function BahanList({ data }: { data: Bahan[] }) {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Variasi Warna (Multi-Select)</Label>
-                  <div className="grid grid-cols-4 gap-1.5 max-h-48 overflow-y-auto p-2 rounded-lg border border-zinc-800 bg-zinc-900/50">
-                    {WARNA_OPTIONS.map((w) => {
-                      const selected = form.warnaList.includes(w)
-                      return (
-                        <button
-                          key={w}
-                          type="button"
-                          onClick={() => toggleWarna(w)}
-                          className={`text-[10px] px-2 py-1 rounded border transition-all ${
-                            selected
-                              ? "bg-amber-500/20 border-amber-700 text-amber-400"
-                              : "border-zinc-800 text-zinc-500 hover:border-zinc-600"
-                          }`}
-                        >
-                          {w}
-                        </button>
-                      )
-                    })}
+                  <Label>Variasi Warna</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Ketik warna lalu Enter"
+                      value={warnaInput}
+                      onChange={(e) => setWarnaInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault()
+                          const w = warnaInput.trim().toUpperCase()
+                          if (w && !form.warnaList.includes(w)) {
+                            setForm({ ...form, warnaList: [...form.warnaList, w] })
+                          }
+                          setWarnaInput("")
+                        }
+                      }}
+                    />
+                    <Button type="button" variant="outline" size="sm" onClick={() => {
+                      const w = warnaInput.trim().toUpperCase()
+                      if (w && !form.warnaList.includes(w)) {
+                        setForm({ ...form, warnaList: [...form.warnaList, w] })
+                      }
+                      setWarnaInput("")
+                    }}>
+                      <Plus className="h-3 w-3" />
+                    </Button>
                   </div>
                   {form.warnaList.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {form.warnaList.map((w) => (
-                        <span key={w} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">
+                    <div className="flex flex-wrap gap-1">
+                      {form.warnaList.map((w, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">
                           {w}
-                          <button type="button" onClick={() => toggleWarna(w)} className="hover:text-amber-200">
+                          <button type="button" onClick={() => {
+                            setForm({ ...form, warnaList: form.warnaList.filter((_, j) => j !== i) })
+                          }} className="hover:text-amber-200">
                             <X className="h-2.5 w-2.5" />
                           </button>
                         </span>
