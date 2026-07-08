@@ -82,10 +82,15 @@ export async function PATCH(req: NextRequest) {
       })
 
       for (const item of items) {
-        const increment = item.bahan.satuan === "KG" ? item.totalKg : item.totalMeter
+        const isKg = item.bahan.satuan === "KG"
+        const increment = isKg ? item.totalKg : item.totalMeter
+        const price = isKg ? item.hargaPerKg : item.hargaPerMeter
         await prisma.bahan.update({
           where: { id: item.bahanId },
-          data: { stok: { increment } },
+          data: {
+            stok: { increment },
+            ...(price > 0 && { hargaBeli: price }),
+          },
         })
       }
 

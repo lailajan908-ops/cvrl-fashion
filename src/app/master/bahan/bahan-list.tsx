@@ -17,11 +17,12 @@ type Bahan = {
   kode: string
   nama: string
   satuan: string
+  kategori: string
   stok: number
   hargaBeli: number
 }
 
-const initialForm = { nama: "", satuan: "Meter", stok: 0, hargaBeli: 0 }
+const initialForm = { nama: "", satuan: "Meter", kategori: "Bahan Baku", stok: 0, hargaBeli: 0 }
 
 export function BahanList({ data }: { data: Bahan[] }) {
   const router = useRouter()
@@ -35,7 +36,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
   }
 
   function openEdit(item: Bahan) {
-    setForm({ nama: item.nama, satuan: item.satuan, stok: item.stok, hargaBeli: item.hargaBeli })
+    setForm({ nama: item.nama, satuan: item.satuan, kategori: item.kategori, stok: item.stok, hargaBeli: item.hargaBeli })
     setEditing(item)
     setOpen(true)
   }
@@ -97,6 +98,18 @@ export function BahanList({ data }: { data: Bahan[] }) {
                   <Input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama bahan" />
                 </div>
                 <div className="space-y-2">
+                  <Label>Kategori</Label>
+                  <Select value={form.kategori} onValueChange={(v) => setForm({ ...form, kategori: v || "Bahan Baku" })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bahan Baku">Bahan Baku</SelectItem>
+                      <SelectItem value="Aksesoris">Aksesoris</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
                   <Label>Satuan</Label>
                   <Select value={form.satuan} onValueChange={(v) => setForm({ ...form, satuan: v || "Meter" })}>
                     <SelectTrigger>
@@ -127,6 +140,7 @@ export function BahanList({ data }: { data: Bahan[] }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nama Bahan</TableHead>
+                <TableHead>Kategori</TableHead>
                 <TableHead>Satuan</TableHead>
                 <TableHead>Stok</TableHead>
                 <TableHead>Harga Beli</TableHead>
@@ -136,12 +150,13 @@ export function BahanList({ data }: { data: Bahan[] }) {
             <TableBody>
               {data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">Belum ada data</TableCell>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">Belum ada data</TableCell>
                 </TableRow>
               )}
               {data.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.nama}</TableCell>
+                  <TableCell><span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">{b.kategori}</span></TableCell>
                   <TableCell>{b.satuan}</TableCell>
                   <TableCell>{b.stok}</TableCell>
                   <TableCell>Rp {b.hargaBeli.toLocaleString()}</TableCell>
