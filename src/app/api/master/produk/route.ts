@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
 
     const body = await req.json()
-    const { kode, nama, deskripsi, kategoriId, weight, variasi, images, labels } = body
+    const { kode, nama, deskripsi, kategoriId, weight, variasi, images, labels, sync } = body
 
     if (!kode || !nama) {
       return Response.json({ error: "Kode dan nama wajib diisi" }, { status: 400 })
@@ -64,11 +64,14 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Kode produk sudah ada" }, { status: 400 })
     }
 
-    const warnaList = [...new Set<string>((variasi || []).map((v: any) => v.warna))]
-    for (const w of warnaList) {
-      const hasFoto = (images || []).some((img: any) => img.warna === w)
-      if (!hasFoto) {
-        return Response.json({ error: `Warna ${w} belum memiliki foto` }, { status: 400 })
+    if (!sync) {
+      const warnaList = [...new Set<string>((variasi || []).map((v: any) => v.warna))]
+      const hasGlobalFoto = (images || []).some((img: any) => !img.warna)
+      for (const w of warnaList) {
+        const hasFoto = (images || []).some((img: any) => img.warna === w) || hasGlobalFoto
+        if (!hasFoto) {
+          return Response.json({ error: `Warna ${w} belum memiliki foto` }, { status: 400 })
+        }
       }
     }
 
@@ -129,15 +132,18 @@ export async function PUT(req: NextRequest) {
     await requireApiRole("Owner", "ManagerProduksi", "AdminGudang")
 
     const body = await req.json()
-    const { id, kode, nama, deskripsi, kategoriId, weight, variasi, images, labels } = body
+    const { id, kode, nama, deskripsi, kategoriId, weight, variasi, images, labels, sync } = body
 
     if (!id) return Response.json({ error: "ID required" }, { status: 400 })
 
-    const warnaList = [...new Set<string>((variasi || []).map((v: any) => v.warna))]
-    for (const w of warnaList) {
-      const hasFoto = (images || []).some((img: any) => img.warna === w)
-      if (!hasFoto) {
-        return Response.json({ error: `Warna ${w} belum memiliki foto` }, { status: 400 })
+    if (!sync) {
+      const warnaList = [...new Set<string>((variasi || []).map((v: any) => v.warna))]
+      const hasGlobalFoto = (images || []).some((img: any) => !img.warna)
+      for (const w of warnaList) {
+        const hasFoto = (images || []).some((img: any) => img.warna === w) || hasGlobalFoto
+        if (!hasFoto) {
+          return Response.json({ error: `Warna ${w} belum memiliki foto` }, { status: 400 })
+        }
       }
     }
 
