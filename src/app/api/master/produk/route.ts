@@ -147,37 +147,69 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    await prisma.produkVariasi.deleteMany({ where: { produkId: id } })
-    await prisma.produkImage.deleteMany({ where: { produkId: id } })
+    if (!sync) {
+      await prisma.produkVariasi.deleteMany({ where: { produkId: id } })
+      await prisma.produkImage.deleteMany({ where: { produkId: id } })
+    }
 
-    const produk = await prisma.produk.update({
-      where: { id },
-      data: {
-        kode, nama,
-        deskripsi: deskripsi || null,
-        kategoriId: kategoriId || null,
-        weight: weight || 0,
-        variasi: variasi?.length ? {
-          create: variasi.map((v: any) => ({
+    const updateData: any = {}
+    if (nama) updateData.nama = nama
+    if (deskripsi !== undefined) updateData.deskripsi = deskripsi || null
+    if (kategoriId !== undefined) updateData.kategoriId = kategoriId || null
+    if (weight !== undefined) updateData.weight = weight || 0
+
+    if (sync && variasi?.length) {
+      // Sync mode: upsert variations by SKU, don't touch images
+      for (const v of variasi) {
+        const sku = v.sku || generateVariantSKU(kode, v.warna, v.size)
+        await prisma.produkVariasi.upsert({
+          where: { sku },
+          create: {
+            produkId: id,
             size: v.size, warna: v.warna,
-            sku: v.sku || generateVariantSKU(kode, v.warna, v.size),
+            sku,
             barcode: v.barcode || null,
             price: v.price || 0,
             hargaDiskon: v.hargaDiskon || null,
             hargaProduksi: v.hargaProduksi || 0,
             stock: v.stock || 0,
             isActive: v.isActive ?? true,
-          }))
-        } : undefined,
-        images: images?.length ? {
-          create: images.map((img: any, i: number) => ({
-            url: img.url,
-            warna: img.warna || null,
-            isPrimary: img.isPrimary || i === 0,
-            order: i
-          }))
-        } : undefined,
-      },
+          },
+          update: {
+            price: v.price || 0,
+            stock: v.stock || 0,
+          }
+        })
+      }
+    } else if (variasi?.length) {
+      updateData.variasi = {
+        create: variasi.map((v: any) => ({
+          size: v.size, warna: v.warna,
+          sku: v.sku || generateVariantSKU(kode, v.warna, v.size),
+          barcode: v.barcode || null,
+          price: v.price || 0,
+          hargaDiskon: v.hargaDiskon || null,
+          hargaProduksi: v.hargaProduksi || 0,
+          stock: v.stock || 0,
+          isActive: v.isActive ?? true,
+        }))
+      }
+    }
+
+    if (!sync && images?.length) {
+      updateData.images = {
+        create: images.map((img: any, i: number) => ({
+          url: img.url,
+          warna: img.warna || null,
+          isPrimary: img.isPrimary || i === 0,
+          order: i
+        }))
+      }
+    }
+
+    const produk = await prisma.produk.update({
+      where: { id },
+      data: updateData,
       include: produkInclude
     })
 
